@@ -1,7 +1,7 @@
 import Navbar from '../components/Navbar';
 import { ArrowLeft, Shield, BarChart3, MessageSquare, Heart, Lightbulb, AlertCircle, ImagePlus, Trash2, Edit2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function AdminPanel() {
   const [adminCode, setAdminCode] = useState('');
@@ -76,6 +76,98 @@ export default function AdminPanel() {
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
+    }
+  };
+
+  const [ideasList, setIdeasList] = useState<any[]>([]);
+  const [forumThreads, setForumThreads] = useState<any[]>([]);
+  const [reportsList, setReportsList] = useState<any[]>([]);
+  const [loadingAdminContent, setLoadingAdminContent] = useState(false);
+
+  const fetchIdeasList = async () => {
+    try {
+      const response = await fetch('/api/ideas');
+      if (response.ok) {
+        setIdeasList(await response.json());
+      }
+    } catch (error) {
+      console.error('Error fetching ideas:', error);
+    }
+  };
+
+  const fetchForumThreads = async () => {
+    try {
+      const response = await fetch('/api/forum/threads');
+      if (response.ok) {
+        setForumThreads(await response.json());
+      }
+    } catch (error) {
+      console.error('Error fetching forum threads:', error);
+    }
+  };
+
+  const fetchReports = async () => {
+    try {
+      const response = await fetch(`/api/bullying-reports?admin_code=${adminCode}`);
+      if (response.ok) {
+        setReportsList(await response.json());
+      }
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    if (activeTab === 'ideas') {
+      setLoadingAdminContent(true);
+      fetchIdeasList().finally(() => setLoadingAdminContent(false));
+    }
+
+    if (activeTab === 'forum') {
+      setLoadingAdminContent(true);
+      fetchForumThreads().finally(() => setLoadingAdminContent(false));
+    }
+
+    if (activeTab === 'reports') {
+      setLoadingAdminContent(true);
+      fetchReports().finally(() => setLoadingAdminContent(false));
+    }
+  }, [isAuthenticated, activeTab]);
+
+  const handleDeleteIdea = async (id: number) => {
+    try {
+      const response = await fetch(`/api/ideas/${id}?admin_code=${adminCode}`, { method: 'DELETE' });
+      if (response.ok) {
+        setIdeasList((prev) => prev.filter((idea) => idea.id !== id));
+      }
+    } catch (error) {
+      console.error('Error deleting idea:', error);
+    }
+  };
+
+  const handleDeleteForumThread = async (id: number) => {
+    try {
+      const response = await fetch(`/api/forum/threads/${id}?admin_code=${adminCode}`, { method: 'DELETE' });
+      if (response.ok) {
+        setForumThreads((prev) => prev.filter((thread) => thread.id !== id));
+      }
+    } catch (error) {
+      console.error('Error deleting forum thread:', error);
+    }
+  };
+
+  const handleDeleteReport = async (id: number) => {
+    try {
+      const response = await fetch(`/api/bullying-reports/${id}?admin_code=${adminCode}`, { method: 'DELETE' });
+      if (response.ok) {
+        setReportsList((prev) => prev.filter((report) => report.id !== id));
+      }
+    } catch (error) {
+      console.error('Error deleting report:', error);
     }
   };
 
@@ -707,9 +799,32 @@ export default function AdminPanel() {
         {activeTab === 'ideas' && (
           <div className="bg-white rounded-xl p-6 shadow-lg">
             <h2 className="text-2xl font-bold mb-6">Kelola Bank Ide</h2>
-            <p className="text-gray-600 py-12 text-center">
-              Fitur kelola ide akan segera hadir. Anda dapat menghapus ide yang tidak sesuai.
-            </p>
+            {loadingAdminContent ? (
+              <p className="text-gray-600">Memuat daftar ide...</p>
+            ) : ideasList.length === 0 ? (
+              <p className="text-gray-600">Belum ada ide masuk. Semuanya akan muncul di sini ketika siswa mengirim ide.</p>
+            ) : (
+              <div className="space-y-4">
+                {ideasList.map((idea) => (
+                  <div key={idea.id} className="rounded-2xl border border-gray-200 p-4 hover:shadow-lg transition-shadow">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Pengirim: <span className="font-semibold text-gray-800">{idea.user_name}</span></p>
+                        <h3 className="text-xl font-semibold text-gray-900">{idea.title}</h3>
+                        <p className="text-sm text-slate-500 mt-1">Kategori: <span className="font-medium">{idea.category}</span></p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteIdea(idea.id)}
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
+                      >
+                        Hapus Ide
+                      </button>
+                    </div>
+                    <p className="text-gray-600 mt-4 leading-relaxed">{idea.description}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -717,9 +832,32 @@ export default function AdminPanel() {
         {activeTab === 'forum' && (
           <div className="bg-white rounded-xl p-6 shadow-lg">
             <h2 className="text-2xl font-bold mb-6">Kelola Forum</h2>
-            <p className="text-gray-600 py-12 text-center">
-              Fitur kelola forum akan segera hadir. Anda dapat menghapus diskusi yang tidak sesuai.
-            </p>
+            {loadingAdminContent ? (
+              <p className="text-gray-600">Memuat daftar forum...</p>
+            ) : forumThreads.length === 0 ? (
+              <p className="text-gray-600">Belum ada thread forum. Akan muncul saat siswa mengirim diskusi.</p>
+            ) : (
+              <div className="space-y-4">
+                {forumThreads.map((thread) => (
+                  <div key={thread.id} className="rounded-2xl border border-gray-200 p-4 hover:shadow-lg transition-shadow">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Pengirim: <span className="font-semibold text-gray-800">{thread.user_name}</span></p>
+                        <h3 className="text-xl font-semibold text-gray-900">{thread.title}</h3>
+                        <p className="text-sm text-slate-500 mt-1">Kategori: <span className="font-medium">{thread.category}</span></p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteForumThread(thread.id)}
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
+                      >
+                        Hapus Thread
+                      </button>
+                    </div>
+                    <p className="text-gray-600 mt-4 leading-relaxed">{thread.content}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -727,9 +865,31 @@ export default function AdminPanel() {
         {activeTab === 'reports' && (
           <div className="bg-white rounded-xl p-6 shadow-lg">
             <h2 className="text-2xl font-bold mb-6">Laporan Bullying</h2>
-            <p className="text-gray-600 py-12 text-center">
-              Laporan bullying dari siswa akan ditampilkan di sini. Setiap laporan sangat penting dan harus ditangani dengan serius.
-            </p>
+            {loadingAdminContent ? (
+              <p className="text-gray-600">Memuat laporan...</p>
+            ) : reportsList.length === 0 ? (
+              <p className="text-gray-600">Belum ada laporan bullying. Semua laporan masuk akan muncul di sini.</p>
+            ) : (
+              <div className="space-y-4">
+                {reportsList.map((report) => (
+                  <div key={report.id} className="rounded-2xl border border-gray-200 p-4 hover:shadow-lg transition-shadow">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Pengirim: <span className="font-semibold text-gray-800">{report.reporter_name}</span></p>
+                        <p className="text-sm text-slate-500">Lokasi: <span className="font-medium">{report.incident_location || 'Tidak disebutkan'}</span></p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteReport(report.id)}
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
+                      >
+                        Hapus Laporan
+                      </button>
+                    </div>
+                    <p className="text-gray-600 mt-4 leading-relaxed">{report.incident_description}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

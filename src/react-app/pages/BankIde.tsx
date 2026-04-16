@@ -1,11 +1,29 @@
 import Navbar from '../components/Navbar';
 import { ArrowLeft, Lightbulb, TrendingUp, CheckCircle, Clock, Flame, ThumbsUp, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function BankIde() {
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState<'all' | 'popular' | 'new'>('all');
+  const [ideas, setIdeas] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionMessage, setSubmissionMessage] = useState('');
+  const [newIdea, setNewIdea] = useState({
+    title: '',
+    category: '',
+    description: '',
+    author: '',
+  });
+
+  const ideaCategories = [
+    { id: 'pendidikan', name: 'Pendidikan', color: 'from-cyan-500 to-blue-500' },
+    { id: 'event', name: 'Event', color: 'from-purple-500 to-pink-500' },
+    { id: 'fasilitas', name: 'Fasilitas', color: 'from-emerald-500 to-teal-500' },
+    { id: 'lingkungan', name: 'Lingkungan', color: 'from-green-500 to-lime-500' },
+    { id: 'kreatif', name: 'Kreatif', color: 'from-fuchsia-500 to-violet-500' },
+    { id: 'lainnya', name: 'Lainnya', color: 'from-slate-500 to-slate-700' },
+  ];
 
   const statusColors = {
     dipertimbangkan: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: Clock, label: '⏳ Dipertimbangkan' },
@@ -13,13 +31,77 @@ export default function BankIde() {
     direalisasikan: { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircle, label: '✅ Direalisasikan' },
   };
 
-  const ideas: any[] = [];
-
   const stats = [
     { icon: Lightbulb, value: '127', label: 'Total Ide', color: 'text-purple-600' },
     { icon: TrendingUp, value: '23', label: 'Diproses', color: 'text-blue-600' },
     { icon: CheckCircle, value: '18', label: 'Terealisasi', color: 'text-green-600' },
   ];
+
+  useEffect(() => {
+    const fetchIdeas = async () => {
+      try {
+        const response = await fetch('/api/ideas');
+        if (response.ok) {
+          const data = await response.json();
+          setIdeas(data);
+        }
+      } catch (error) {
+        console.error('Error fetching ideas:', error);
+      }
+    };
+
+    fetchIdeas();
+  }, []);
+
+  const handleIdeaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmissionMessage('');
+
+    if (!newIdea.title.trim() || !newIdea.category || !newIdea.description.trim() || !newIdea.author.trim()) {
+      setSubmissionMessage('Mohon lengkapi semua kolom ide.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/ideas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_name: newIdea.author,
+          title: newIdea.title,
+          description: newIdea.description,
+          category: newIdea.category,
+        }),
+      });
+
+      if (response.ok) {
+        setSubmissionMessage('Ide berhasil dikirim. Terima kasih!');
+        setNewIdea({ title: '', category: '', description: '', author: '' });
+        const data = await response.json();
+        setIdeas((prev) => [{ ...data, user_name: newIdea.author, title: newIdea.title, description: newIdea.description, category: newIdea.category, votes: 0, created_at: new Date().toISOString() }, ...prev]);
+      } else {
+        setSubmissionMessage('Gagal mengirim ide. Silakan coba lagi.');
+      }
+    } catch (error) {
+      console.error('Error sending idea:', error);
+      setSubmissionMessage('Terjadi kesalahan saat mengirim ide.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const filteredIdeas = ideas
+    .slice()
+    .sort((a, b) => {
+      if (filter === 'popular') {
+        return (b.votes || 0) - (a.votes || 0);
+      }
+      if (filter === 'new') {
+        return new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime();
+      }
+      return 0;
+    });
 
   return (
     <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
@@ -115,13 +197,20 @@ export default function BankIde() {
           {showForm && (
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-6 mb-8 border border-gray-200 dark:border-slate-700 animate-in slide-in-from-top duration-300">
               <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Bagikan Ide Kreatifmu</h3>
-              <form className="space-y-4">
+              <form className="space-y-4" onSubmit={handleIdeaSubmit}>
+                {submissionMessage && (
+                  <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-700">
+                    {submissionMessage}
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Judul Ide *
                   </label>
                   <input
                     type="text"
+                    value={newIdea.title}
+                    onChange={(e) => setNewIdea({ ...newIdea, title: e.target.value })}
                     placeholder="Contoh: Workshop Programming untuk Pemula"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                   />
@@ -130,15 +219,34 @@ export default function BankIde() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Kategori *
                   </label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all">
-                    <option value="">Pilih Kategori</option>
-                    <option value="pendidikan">Pendidikan</option>
-                    <option value="event">Event</option>
-                    <option value="fasilitas">Fasilitas</option>
-                    <option value="lingkungan">Lingkungan</option>
-                    <option value="kreatif">Kreatif</option>
-                    <option value="lainnya">Lainnya</option>
-                  </select>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {ideaCategories.map((category) => (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() => setNewIdea({ ...newIdea, category: category.id })}
+                        className={`rounded-2xl px-4 py-3 text-sm font-medium transition-all border ${
+                          newIdea.category === category.id
+                            ? `bg-gradient-to-r ${category.color} text-white border-transparent shadow-lg shadow-${category.color.replace('from-', '').replace('to-', '')}/30`
+                            : 'bg-white text-slate-700 border-gray-200 hover:border-purple-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        {category.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nama Pengirim *
+                  </label>
+                  <input
+                    type="text"
+                    value={newIdea.author}
+                    onChange={(e) => setNewIdea({ ...newIdea, author: e.target.value })}
+                    placeholder="Nama Anda"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -146,6 +254,8 @@ export default function BankIde() {
                   </label>
                   <textarea
                     rows={5}
+                    value={newIdea.description}
+                    onChange={(e) => setNewIdea({ ...newIdea, description: e.target.value })}
                     placeholder="Jelaskan ide kamu secara detail..."
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
                   ></textarea>
@@ -171,7 +281,7 @@ export default function BankIde() {
 
           {/* Ideas Grid */}
           <div className="grid grid-cols-1 gap-6">
-            {ideas.map((idea) => {
+            {filteredIdeas.map((idea) => {
               const statusInfo = statusColors[idea.status as keyof typeof statusColors] || statusColors.dipertimbangkan;
               return (
                 <div
@@ -192,9 +302,9 @@ export default function BankIde() {
                         <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">{idea.title}</h3>
                         <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-3">{idea.description}</p>
                         <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
-                          <span className="font-medium">{idea.author}</span>
+                          <span className="font-medium">{idea.user_name || idea.author || 'Anonim'}</span>
                           <span>•</span>
-                          <span>{idea.date}</span>
+                          <span>{idea.created_at ? new Date(idea.created_at).toLocaleDateString() : idea.date || '-'}</span>
                         </div>
                       </div>
                     </div>

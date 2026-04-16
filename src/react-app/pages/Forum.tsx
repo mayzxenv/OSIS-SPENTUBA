@@ -1,12 +1,19 @@
 import Navbar from '../components/Navbar';
 import { ArrowLeft, MessageSquare, TrendingUp, Clock, Pin, Lock, ThumbsUp, MessageCircle, Eye } from 'lucide-react';
 import { Link } from 'react-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function Forum() {
   const [showNewThread, setShowNewThread] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [threadCategory, setThreadCategory] = useState<string>('');
+  const [threads, setThreads] = useState<any[]>([]);
+  const [threadAuthor, setThreadAuthor] = useState('');
+  const [threadTitle, setThreadTitle] = useState('');
+  const [threadContent, setThreadContent] = useState('');
+  const [threadError, setThreadError] = useState('');
+  const [threadSuccess, setThreadSuccess] = useState('');
+  const [isPosting, setIsPosting] = useState(false);
 
   const categories = [
     { id: 'all', name: 'Semua', icon: MessageSquare, color: 'text-gray-600' },
@@ -15,17 +22,84 @@ export default function Forum() {
     { id: 'ide', name: 'Ide Kegiatan', icon: MessageSquare, color: 'text-purple-600' },
   ];
 
-  const threads: any[] = [];
-
   const stats = [
     { icon: MessageSquare, value: '234', label: 'Thread Aktif', color: 'text-blue-600' },
     { icon: MessageCircle, value: '1,567', label: 'Diskusi', color: 'text-purple-600' },
     { icon: TrendingUp, value: '892', label: 'Aktivitas Hari Ini', color: 'text-green-600' },
   ];
 
-  const filteredThreads = selectedCategory === 'all' 
-    ? threads 
-    : threads.filter(t => t.category === selectedCategory);
+  useEffect(() => {
+    const fetchThreads = async () => {
+      try {
+        const response = await fetch('/api/forum/threads');
+        if (response.ok) {
+          const data = await response.json();
+          setThreads(data);
+        }
+      } catch (error) {
+        console.error('Error loading forum threads:', error);
+      }
+    };
+
+    fetchThreads();
+  }, []);
+
+  const filteredThreads = selectedCategory === 'all'
+    ? threads
+    : threads.filter((t) => t.category === selectedCategory);
+
+  const handleNewThreadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setThreadError('');
+    setThreadSuccess('');
+
+    if (!threadAuthor.trim() || !threadTitle.trim() || !threadCategory || !threadContent.trim()) {
+      setThreadError('Mohon lengkapi semua kolom thread.');
+      return;
+    }
+
+    setIsPosting(true);
+
+    try {
+      const response = await fetch('/api/forum/threads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_name: threadAuthor,
+          title: threadTitle,
+          content: threadContent,
+          category: threadCategory,
+        }),
+      });
+
+      if (response.ok) {
+        setThreadSuccess('Thread berhasil dikirim.');
+        setThreadAuthor('');
+        setThreadTitle('');
+        setThreadContent('');
+        setThreadCategory('');
+        const newThread = {
+          id: Date.now(),
+          user_name: threadAuthor,
+          title: threadTitle,
+          content: threadContent,
+          category: threadCategory,
+          lastReply: 'Baru saja',
+          likes: 0,
+          replies: 0,
+          views: 0,
+        };
+        setThreads((prev) => [newThread, ...prev]);
+      } else {
+        setThreadError('Gagal mengirim thread. Silakan coba lagi.');
+      }
+    } catch (error) {
+      console.error('Error posting thread:', error);
+      setThreadError('Terjadi kesalahan saat mengirim thread.');
+    } finally {
+      setIsPosting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
@@ -104,13 +178,37 @@ export default function Forum() {
           {showNewThread && (
             <div className="bg-white rounded-2xl shadow-xl p-6 mb-8 border border-gray-200 animate-in slide-in-from-top duration-300">
               <h3 className="text-xl font-bold text-gray-800 mb-4">Buat Diskusi Baru</h3>
-              <form className="space-y-4">
+              <form className="space-y-4" onSubmit={handleNewThreadSubmit}>
+                {threadError && (
+                  <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+                    {threadError}
+                  </div>
+                )}
+                {threadSuccess && (
+                  <div className="rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-700">
+                    {threadSuccess}
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nama Pengirim *
+                  </label>
+                  <input
+                    type="text"
+                    value={threadAuthor}
+                    onChange={(e) => setThreadAuthor(e.target.value)}
+                    placeholder="Nama kamu"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Judul Thread *
                   </label>
                   <input
                     type="text"
+                    value={threadTitle}
+                    onChange={(e) => setThreadTitle(e.target.value)}
                     placeholder="Contoh: Usulan Kegiatan Bakti Sosial Bulanan"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
@@ -119,26 +217,25 @@ export default function Forum() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Kategori *
                   </label>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                    {categories
-                      .filter((cat) => cat.id !== 'all')
-                      .map((cat) => (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => setThreadCategory(cat.id)}
-                          className={`w-full flex items-center gap-2 px-4 py-3 rounded-xl border text-left transition-all ${
-                            threadCategory === cat.id
-                              ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-transparent shadow-lg shadow-blue-500/20'
-                              : 'bg-white text-gray-700 border border-gray-300 hover:border-blue-300 hover:bg-slate-50'
-                          }`}
-                        >
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {categories.filter((cat) => cat.id !== 'all').map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setThreadCategory(cat.id)}
+                        className={`w-full rounded-xl px-4 py-3 text-left border transition-all ${
+                          threadCategory === cat.id
+                            ? 'bg-blue-600 text-white border-transparent shadow-lg shadow-blue-500/20'
+                            : 'bg-white text-gray-700 border border-gray-300 hover:border-blue-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
                           <cat.icon className={`w-4 h-4 ${threadCategory === cat.id ? 'text-white' : cat.color}`} />
                           <span>{cat.name}</span>
-                        </button>
-                      ))}
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                  <input type="hidden" name="category" value={threadCategory} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -146,6 +243,8 @@ export default function Forum() {
                   </label>
                   <textarea
                     rows={6}
+                    value={threadContent}
+                    onChange={(e) => setThreadContent(e.target.value)}
                     placeholder="Tulis topik diskusi kamu di sini..."
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
                   ></textarea>
@@ -153,9 +252,10 @@ export default function Forum() {
                 <div className="flex gap-3">
                   <button
                     type="submit"
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/30 transition-all hover:-translate-y-0.5"
+                    disabled={isPosting}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/30 transition-all hover:-translate-y-0.5 disabled:opacity-70"
                   >
-                    💬 Posting Thread
+                    💬 {isPosting ? 'Mengirim...' : 'Posting Thread'}
                   </button>
                   <button
                     type="button"
@@ -178,8 +278,8 @@ export default function Forum() {
               >
                 <div className="flex gap-4">
                   <img
-                    src={thread.avatar}
-                    alt={thread.author}
+                    src={thread.user_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(thread.user_name || thread.author || 'Anonim')}&background=0D8ABC&color=fff`}
+                    alt={thread.user_name || thread.author || 'Anonim'}
                     className="w-12 h-12 rounded-full object-cover flex-shrink-0"
                   />
                   <div className="flex-1">
@@ -205,13 +305,13 @@ export default function Forum() {
                     <h3 className="text-xl font-bold text-gray-800 mb-2 hover:text-blue-600 cursor-pointer transition-colors">
                       {thread.title}
                     </h3>
-                    <p className="text-gray-600 mb-3 line-clamp-2">{thread.excerpt}</p>
+                    <p className="text-gray-600 mb-3 line-clamp-2">{thread.content || thread.excerpt}</p>
                     <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
-                      <span className="font-medium text-gray-700">{thread.author}</span>
+                      <span className="font-medium text-gray-700">{thread.user_name || thread.author || 'Anonim'}</span>
                       <span>•</span>
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {thread.lastReply}
+                        {thread.lastReply || (thread.created_at ? new Date(thread.created_at).toLocaleString() : 'Baru saja')}
                       </span>
                     </div>
                     <div className="flex items-center gap-6 text-sm">

@@ -294,6 +294,20 @@ app.get("/api/bullying-reports", async (c) => {
   return c.json(results);
 });
 
+app.delete("/api/bullying-reports/:id", async (c) => {
+  const adminCode = c.env.ADMIN_ACCESS_CODE || "OSIS2026";
+  const code = c.req.query("admin_code") || c.req.header("X-Admin-Code");
+
+  if (code !== adminCode) {
+    return c.json({ error: "Invalid admin code" }, 401);
+  }
+
+  const id = c.req.param("id");
+  await c.env.DB.prepare("DELETE FROM bullying_reports WHERE id = ?").bind(id).run();
+
+  return c.json({ success: true });
+});
+
 // Update bullying report status (admin only)
 app.patch("/api/bullying-reports/:id", async (c) => {
   const adminCode = c.env.ADMIN_ACCESS_CODE || "OSIS2026";

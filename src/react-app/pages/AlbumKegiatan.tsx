@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 
 export default function AlbumKegiatan() {
   const [albums, setAlbums] = useState<any[]>([]);
+  const [activePhotoIndex, setActivePhotoIndex] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const saved = localStorage.getItem('osis_albums');
@@ -12,6 +13,28 @@ export default function AlbumKegiatan() {
       setAlbums(JSON.parse(saved));
     }
   }, []);
+
+  useEffect(() => {
+    if (albums.length === 0) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setActivePhotoIndex((prev) => {
+        const next = { ...prev };
+        albums.forEach((album) => {
+          if (album.photos?.length > 1) {
+            const key = String(album.id);
+            const current = typeof next[key] === 'number' ? next[key] : 0;
+            next[key] = (current + 1) % album.photos.length;
+          }
+        });
+        return next;
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [albums]);
 
   return (
     <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
@@ -68,22 +91,36 @@ export default function AlbumKegiatan() {
 
                   {/* Images Grid */}
                   {album.photos && album.photos.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
-                      {album.photos.map((photo: string, idx: number) => (
-                        <div
-                          key={idx}
-                          className="relative aspect-video rounded-lg overflow-hidden group cursor-pointer"
-                        >
-                          <img
-                            src={photo}
-                            alt={`${album.title} - Photo ${idx + 1}`}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                            <span className="text-white font-semibold">Foto {idx + 1}</span>
-                          </div>
+                    <div className="p-6">
+                      <div className="relative rounded-3xl overflow-hidden shadow-lg">
+                        <img
+                          src={album.photos.length > 1 ? album.photos[activePhotoIndex[String(album.id)] ?? 0] : album.photos[0]}
+                          alt={`${album.title} - Foto`}
+                          className="w-full h-[420px] object-cover"
+                        />
+                        <div className="absolute inset-x-0 top-4 px-6 flex items-center justify-between">
+                          <span className="rounded-full bg-indigo-600/90 text-white text-xs px-3 py-1">
+                            {album.photos.length > 1 ? `Slide otomatis setiap 3 detik` : 'Ditampilkan selama 1 bulan'}
+                          </span>
+                          {album.photos.length > 1 && (
+                            <span className="rounded-full bg-white/90 text-slate-900 text-xs px-3 py-1">
+                              {String((activePhotoIndex[String(album.id)] ?? 0) + 1).padStart(2, '0')} / {album.photos.length}
+                            </span>
+                          )}
                         </div>
-                      ))}
+                        {album.photos.length > 1 && (
+                          <div className="absolute bottom-4 inset-x-0 flex justify-center gap-2 px-6">
+                            {album.photos.map((_photo: string, index: number) => (
+                              <span
+                                key={index}
+                                className={`h-2.5 w-2.5 rounded-full transition-colors ${
+                                  (activePhotoIndex[String(album.id)] ?? 0) === index ? 'bg-white' : 'bg-white/50'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
