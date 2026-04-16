@@ -48,22 +48,31 @@ export default function AdminPanel() {
     e.preventDefault();
     setErrorMessage('');
 
+    if (!adminCode.trim()) {
+      setErrorMessage('Masukkan kode akses terlebih dahulu.');
+      return;
+    }
+
     try {
       const response = await fetch('/api/admin/verify-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: adminCode }),
+        body: JSON.stringify({ code: adminCode.trim() }),
       });
 
       if (response.ok) {
         setIsAuthenticated(true);
-        // Fetch stats
         fetchStats();
       } else {
-        setErrorMessage('Kode akses salah. Silakan coba lagi.');
+        const data = await response.json().catch(() => null);
+        if (response.status === 404) {
+          setErrorMessage('API admin tidak ditemukan. Pastikan backend worker dijalankan.');
+        } else {
+          setErrorMessage(data?.error || `Kode akses salah. (${response.status})`);
+        }
       }
     } catch (error) {
-      setErrorMessage('Terjadi kesalahan. Silakan coba lagi.');
+      setErrorMessage('Terjadi kesalahan jaringan. Pastikan backend worker dijalankan.');
     }
   };
 
@@ -79,6 +88,21 @@ export default function AdminPanel() {
     }
   };
 
+  useEffect(() => {
+    const storedMetrics = localStorage.getItem('osis_admin_metrics');
+    if (storedMetrics) {
+      setAdminMetrics(JSON.parse(storedMetrics));
+    }
+  }, []);
+
+  const [adminMetrics, setAdminMetrics] = useState({
+    siswaAktif: '0',
+    apresiasi: '0',
+    ideTerealisasi: '0',
+    eventBulanan: '0',
+  });
+  const [metricsMessage, setMetricsMessage] = useState('');
+  const [ideaStatusMap, setIdeaStatusMap] = useState<Record<string, string>>({});
   const [ideasList, setIdeasList] = useState<any[]>([]);
   const [forumThreads, setForumThreads] = useState<any[]>([]);
   const [reportsList, setReportsList] = useState<any[]>([]);
@@ -88,7 +112,13 @@ export default function AdminPanel() {
     try {
       const response = await fetch('/api/ideas');
       if (response.ok) {
-        setIdeasList(await response.json());
+        const data = await response.json();
+        const storedStatuses = JSON.parse(localStorage.getItem('osis_idea_statuses') || '{}');
+        setIdeaStatusMap(storedStatuses);
+        setIdeasList(data.map((idea: any) => ({
+          ...idea,
+          status: storedStatuses[String(idea.id)] || 'dipertimbangkan',
+        })));
       }
     } catch (error) {
       console.error('Error fetching ideas:', error);
@@ -147,6 +177,18 @@ export default function AdminPanel() {
     } catch (error) {
       console.error('Error deleting idea:', error);
     }
+  };
+
+  const updateIdeaStatus = (id: number, status: string) => {
+    const nextStatus = { ...ideaStatusMap, [String(id)]: status };
+    localStorage.setItem('osis_idea_statuses', JSON.stringify(nextStatus));
+    setIdeaStatusMap(nextStatus);
+    setIdeasList((prev) => prev.map((idea) => (idea.id === id ? { ...idea, status } : idea)));
+  };
+
+  const saveAdminMetrics = () => {
+    localStorage.setItem('osis_admin_metrics', JSON.stringify(adminMetrics));
+    setMetricsMessage('Statistik berhasil disimpan.');
   };
 
   const handleDeleteForumThread = async (id: number) => {
@@ -397,6 +439,67 @@ export default function AdminPanel() {
                   </div>
                   <AlertCircle className="w-12 h-12 text-red-500 opacity-20" />
                 </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
+              <div className="flex items-center justify-between mb-4 gap-4">
+                <div>
+                  <h3 className="text-2xl font-bold">Pengaturan Statistik Umum</h3>
+                  <p className="text-sm text-gray-600 mt-1">Ubah angka siswa aktif, apresiasi, ide terealisasi, dan event bulanan dari halaman admin.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={saveAdminMetrics}
+                  className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-all shadow-sm"
+                >
+                  Simpan Statistik
+                </button>
+              </div>
+
+              {metricsMessage && (
+                <div className="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-700">
+                  {metricsMessage}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className="space-y-2">
+                  <span className="text-sm font-medium text-gray-700">Siswa Aktif</span>
+                  <input
+                    type="number"
+                    value={adminMetrics.siswaAktif}
+                    onChange={(e) => setAdminMetrics({ ...adminMetrics, siswaAktif: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-medium text-gray-700">Apresiasi</span>
+                  <input
+                    type="number"
+                    value={adminMetrics.apresiasi}
+                    onChange={(e) => setAdminMetrics({ ...adminMetrics, apresiasi: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-medium text-gray-700">Ide Terealisasi</span>
+                  <input
+                    type="number"
+                    value={adminMetrics.ideTerealisasi}
+                    onChange={(e) => setAdminMetrics({ ...adminMetrics, ideTerealisasi: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-medium text-gray-700">Event Bulanan</span>
+                  <input
+                    type="number"
+                    value={adminMetrics.eventBulanan}
+                    onChange={(e) => setAdminMetrics({ ...adminMetrics, eventBulanan: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  />
+                </label>
               </div>
             </div>
 
@@ -812,10 +915,22 @@ export default function AdminPanel() {
                         <p className="text-sm text-gray-500 mb-1">Pengirim: <span className="font-semibold text-gray-800">{idea.user_name}</span></p>
                         <h3 className="text-xl font-semibold text-gray-900">{idea.title}</h3>
                         <p className="text-sm text-slate-500 mt-1">Kategori: <span className="font-medium">{idea.category}</span></p>
+                        <div className="mt-3">
+                          <label className="text-sm font-medium text-gray-700">Status ide</label>
+                          <select
+                            value={idea.status || 'dipertimbangkan'}
+                            onChange={(e) => updateIdeaStatus(idea.id, e.target.value)}
+                            className="mt-2 w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm text-gray-800 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                          >
+                            <option value="dipertimbangkan">Dipertimbangkan</option>
+                            <option value="diproses">Diproses</option>
+                            <option value="direalisasikan">Direalisasikan</option>
+                          </select>
+                        </div>
                       </div>
                       <button
                         onClick={() => handleDeleteIdea(idea.id)}
-                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
+                        className="h-fit px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
                       >
                         Hapus Ide
                       </button>

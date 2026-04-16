@@ -31,10 +31,14 @@ export default function BankIde() {
     direalisasikan: { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircle, label: '✅ Direalisasikan' },
   };
 
+  const totalIdeas = ideas.length;
+  const processingIdeas = ideas.filter((idea) => idea.status === 'diproses').length;
+  const realizedIdeas = ideas.filter((idea) => idea.status === 'direalisasikan').length;
+
   const stats = [
-    { icon: Lightbulb, value: '127', label: 'Total Ide', color: 'text-purple-600' },
-    { icon: TrendingUp, value: '23', label: 'Diproses', color: 'text-blue-600' },
-    { icon: CheckCircle, value: '18', label: 'Terealisasi', color: 'text-green-600' },
+    { icon: Lightbulb, value: totalIdeas.toString(), label: 'Total Ide', color: 'text-purple-600' },
+    { icon: TrendingUp, value: processingIdeas.toString(), label: 'Diproses', color: 'text-blue-600' },
+    { icon: CheckCircle, value: realizedIdeas.toString(), label: 'Terealisasi', color: 'text-green-600' },
   ];
 
   useEffect(() => {
@@ -43,7 +47,11 @@ export default function BankIde() {
         const response = await fetch('/api/ideas');
         if (response.ok) {
           const data = await response.json();
-          setIdeas(data);
+          const storedStatuses = JSON.parse(localStorage.getItem('osis_idea_statuses') || '{}');
+          setIdeas(data.map((idea: any) => ({
+            ...idea,
+            status: storedStatuses[String(idea.id)] || 'dipertimbangkan',
+          })));
         }
       } catch (error) {
         console.error('Error fetching ideas:', error);
@@ -76,10 +84,25 @@ export default function BankIde() {
       });
 
       if (response.ok) {
+        const data = await response.json();
+        const newIdeaEntry = {
+          id: data.id ?? Date.now(),
+          user_name: newIdea.author,
+          title: newIdea.title,
+          description: newIdea.description,
+          category: newIdea.category,
+          votes: 0,
+          created_at: new Date().toISOString(),
+          status: 'dipertimbangkan',
+        };
+
+        const storedStatuses = JSON.parse(localStorage.getItem('osis_idea_statuses') || '{}');
+        storedStatuses[String(newIdeaEntry.id)] = 'dipertimbangkan';
+        localStorage.setItem('osis_idea_statuses', JSON.stringify(storedStatuses));
+
+        setIdeas((prev) => [newIdeaEntry, ...prev]);
         setSubmissionMessage('Ide berhasil dikirim. Terima kasih!');
         setNewIdea({ title: '', category: '', description: '', author: '' });
-        const data = await response.json();
-        setIdeas((prev) => [{ ...data, user_name: newIdea.author, title: newIdea.title, description: newIdea.description, category: newIdea.category, votes: 0, created_at: new Date().toISOString() }, ...prev]);
       } else {
         setSubmissionMessage('Gagal mengirim ide. Silakan coba lagi.');
       }
@@ -263,9 +286,14 @@ export default function BankIde() {
                 <div className="flex gap-3">
                   <button
                     type="submit"
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/30 transition-all hover:-translate-y-0.5"
+                    disabled={isSubmitting}
+                    className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all ${
+                      isSubmitting
+                        ? 'bg-slate-400 text-slate-200 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg hover:shadow-purple-500/30 hover:-translate-y-0.5'
+                    }`}
                   >
-                    💡 Kirim Ide
+                    {isSubmitting ? 'Mengirim...' : '💡 Kirim Ide'}
                   </button>
                   <button
                     type="button"

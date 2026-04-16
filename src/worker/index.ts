@@ -58,9 +58,10 @@ app.get("/api/logout", async (c) => {
 // Admin code verification endpoint
 app.post("/api/admin/verify-code", async (c) => {
   const body = await c.req.json<{ code: string }>();
-  const adminCode = c.env.ADMIN_ACCESS_CODE || "OSIS2026";
-  
-  if (body.code === adminCode) {
+  const adminCode = c.env.ADMIN_ACCESS_CODE?.trim() || "OSIS2026";
+  const userCode = (body.code || "").trim();
+
+  if (userCode === adminCode) {
     return c.json({ success: true }, 200);
   }
   return c.json({ error: "Invalid admin code" }, 401);
@@ -121,8 +122,8 @@ app.get("/api/appreciations/leaderboard", async (c) => {
 
 // DELETE appreciation (admin only)
 app.delete("/api/appreciations/:id", async (c) => {
-  const adminCode = c.env.ADMIN_ACCESS_CODE || "OSIS2026";
-  const code = c.req.query("admin_code") || c.req.header("X-Admin-Code");
+  const adminCode = c.env.ADMIN_ACCESS_CODE?.trim() || "OSIS2026";
+  const code = (c.req.query("admin_code") || c.req.header("X-Admin-Code") || "").toString().trim();
   
   if (code !== adminCode) {
     return c.json({ error: "Invalid admin code" }, 401);
@@ -173,8 +174,8 @@ app.get("/api/ideas", async (c) => {
 
 // DELETE idea (admin only)
 app.delete("/api/ideas/:id", async (c) => {
-  const adminCode = c.env.ADMIN_ACCESS_CODE || "OSIS2026";
-  const code = c.req.query("admin_code") || c.req.header("X-Admin-Code");
+  const adminCode = c.env.ADMIN_ACCESS_CODE?.trim() || "OSIS2026";
+  const code = (c.req.query("admin_code") || c.req.header("X-Admin-Code") || "").toString().trim();
   
   if (code !== adminCode) {
     return c.json({ error: "Invalid admin code" }, 401);
@@ -237,8 +238,8 @@ app.get("/api/forum/threads", async (c) => {
 
 // DELETE forum thread (admin only)
 app.delete("/api/forum/threads/:id", async (c) => {
-  const adminCode = c.env.ADMIN_ACCESS_CODE || "OSIS2026";
-  const code = c.req.query("admin_code") || c.req.header("X-Admin-Code");
+  const adminCode = c.env.ADMIN_ACCESS_CODE?.trim() || "OSIS2026";
+  const code = (c.req.query("admin_code") || c.req.header("X-Admin-Code") || "").toString().trim();
   
   if (code !== adminCode) {
     return c.json({ error: "Invalid admin code" }, 401);
@@ -280,8 +281,8 @@ app.post("/api/bullying-reports", async (c) => {
 });
 
 app.get("/api/bullying-reports", async (c) => {
-  const adminCode = c.env.ADMIN_ACCESS_CODE || "OSIS2026";
-  const code = c.req.query("admin_code") || c.req.header("X-Admin-Code");
+  const adminCode = c.env.ADMIN_ACCESS_CODE?.trim() || "OSIS2026";
+  const code = (c.req.query("admin_code") || c.req.header("X-Admin-Code") || "").toString().trim();
   
   if (code !== adminCode) {
     return c.json({ error: "Invalid admin code" }, 401);
@@ -295,8 +296,8 @@ app.get("/api/bullying-reports", async (c) => {
 });
 
 app.delete("/api/bullying-reports/:id", async (c) => {
-  const adminCode = c.env.ADMIN_ACCESS_CODE || "OSIS2026";
-  const code = c.req.query("admin_code") || c.req.header("X-Admin-Code");
+  const adminCode = c.env.ADMIN_ACCESS_CODE?.trim() || "OSIS2026";
+  const code = (c.req.query("admin_code") || c.req.header("X-Admin-Code") || "").toString().trim();
 
   if (code !== adminCode) {
     return c.json({ error: "Invalid admin code" }, 401);
@@ -310,8 +311,8 @@ app.delete("/api/bullying-reports/:id", async (c) => {
 
 // Update bullying report status (admin only)
 app.patch("/api/bullying-reports/:id", async (c) => {
-  const adminCode = c.env.ADMIN_ACCESS_CODE || "OSIS2026";
-  const code = c.req.query("admin_code") || c.req.header("X-Admin-Code");
+  const adminCode = c.env.ADMIN_ACCESS_CODE?.trim() || "OSIS2026";
+  const code = (c.req.query("admin_code") || c.req.header("X-Admin-Code") || "").toString().trim();
   
   if (code !== adminCode) {
     return c.json({ error: "Invalid admin code" }, 401);
@@ -329,8 +330,8 @@ app.patch("/api/bullying-reports/:id", async (c) => {
 
 // Analytics endpoints (admin only)
 app.get("/api/admin/stats", async (c) => {
-  const adminCode = c.env.ADMIN_ACCESS_CODE || "OSIS2026";
-  const code = c.req.query("admin_code") || c.req.header("X-Admin-Code");
+  const adminCode = c.env.ADMIN_ACCESS_CODE?.trim() || "OSIS2026";
+  const code = (c.req.query("admin_code") || c.req.header("X-Admin-Code") || "").toString().trim();
   
   if (code !== adminCode) {
     return c.json({ error: "Invalid admin code" }, 401);

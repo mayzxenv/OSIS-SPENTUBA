@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Sparkles, MessageSquare, Lightbulb, ArrowRight, TrendingUp, Users, Zap, Lock, Monitor, Smartphone } from 'lucide-react';
 import { Link } from 'react-router';
 import { useTheme } from '@/react-app/theme';
@@ -6,6 +6,26 @@ import { useTheme } from '@/react-app/theme';
 export default function HeroSection() {
   const { theme } = useTheme();
   const [viewMode, setViewMode] = useState<'desktop' | 'hp'>('desktop');
+  const [metrics, setMetrics] = useState({
+    siswaAktif: '0',
+    apresiasi: '0',
+    ideTerealisasi: '0',
+    eventBulanan: '0',
+  });
+
+  useEffect(() => {
+    const stored = localStorage.getItem('osis_admin_metrics');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      setMetrics({
+        siswaAktif: parsed.siswaAktif ?? '0',
+        apresiasi: parsed.apresiasi ?? '0',
+        ideTerealisasi: parsed.ideTerealisasi ?? '0',
+        eventBulanan: parsed.eventBulanan ?? '0',
+      });
+    }
+  }, []);
+
   const quickActions = [
     {
       icon: Sparkles,
@@ -42,10 +62,10 @@ export default function HeroSection() {
   ];
 
   const stats = [
-    { icon: Users, value: '1,234', label: 'Siswa Aktif' },
-    { icon: Sparkles, value: '567', label: 'Apresiasi' },
-    { icon: TrendingUp, value: '89', label: 'Ide Terealisasi' },
-    { icon: Zap, value: '45', label: 'Event Bulanan' },
+    { icon: Users, value: metrics.siswaAktif, label: 'Siswa Aktif' },
+    { icon: Sparkles, value: metrics.apresiasi, label: 'Apresiasi' },
+    { icon: TrendingUp, value: metrics.ideTerealisasi, label: 'Ide Terealisasi' },
+    { icon: Zap, value: metrics.eventBulanan, label: 'Event Bulanan' },
   ];
 
   const isDarkMode = theme === 'dark';

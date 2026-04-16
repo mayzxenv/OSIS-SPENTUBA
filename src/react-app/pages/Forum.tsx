@@ -13,6 +13,7 @@ export default function Forum() {
   const [threadContent, setThreadContent] = useState('');
   const [threadError, setThreadError] = useState('');
   const [threadSuccess, setThreadSuccess] = useState('');
+  const [forumError, setForumError] = useState('');
   const [isPosting, setIsPosting] = useState(false);
 
   const categories = [
@@ -22,10 +23,21 @@ export default function Forum() {
     { id: 'ide', name: 'Ide Kegiatan', icon: MessageSquare, color: 'text-purple-600' },
   ];
 
+  const todayThreadsCount = threads.filter((thread) => {
+    if (!thread?.created_at) return false;
+    const created = new Date(thread.created_at);
+    const now = new Date();
+    return (
+      created.getDate() === now.getDate() &&
+      created.getMonth() === now.getMonth() &&
+      created.getFullYear() === now.getFullYear()
+    );
+  }).length;
+
   const stats = [
-    { icon: MessageSquare, value: '234', label: 'Thread Aktif', color: 'text-blue-600' },
-    { icon: MessageCircle, value: '1,567', label: 'Diskusi', color: 'text-purple-600' },
-    { icon: TrendingUp, value: '892', label: 'Aktivitas Hari Ini', color: 'text-green-600' },
+    { icon: MessageSquare, value: threads.length.toString(), label: 'Thread Aktif', color: 'text-blue-600' },
+    { icon: MessageCircle, value: threads.length.toString(), label: 'Diskusi', color: 'text-purple-600' },
+    { icon: TrendingUp, value: todayThreadsCount.toString(), label: 'Aktivitas Hari Ini', color: 'text-green-600' },
   ];
 
   useEffect(() => {
@@ -35,9 +47,15 @@ export default function Forum() {
         if (response.ok) {
           const data = await response.json();
           setThreads(data);
+          setForumError('');
+        } else if (response.status === 404) {
+          setForumError('API forum tidak ditemukan. Pastikan backend worker dijalankan.');
+        } else {
+          setForumError(`Gagal memuat thread forum. Status: ${response.status}`);
         }
       } catch (error) {
         console.error('Error loading forum threads:', error);
+        setForumError('Tidak dapat terhubung ke server forum.');
       }
     };
 
@@ -145,6 +163,12 @@ export default function Forum() {
                 </div>
               ))}
             </div>
+
+            {forumError && (
+              <div className="mt-6 rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+                {forumError}
+              </div>
+            )}
           </div>
 
           {/* Action Bar */}
