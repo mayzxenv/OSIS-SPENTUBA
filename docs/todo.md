@@ -1,0 +1,22 @@
+# Todo
+
+- #1: Set up authentication system with login page and Google OAuth
+- #2: Create database schema for appreciations, ideas, and forum threads
+- #3: Connect appreciation form to save real data to database
+- #4: Connect idea bank form to save real data to database
+- #5: Connect forum form to save real data to database
+- #6: Display real data from database in all pages
+- #7: Create transparency dashboard page
+- #8: Create footer component with working links
+- #9: Build LMS/CMS simulation with admin controls
+- #10: Add announcements system with auto-expire
+- #11: Add digital attendance with QR codes
+- #12: Add missions/challenges system
+- #13: Add badge and achievement system
+- #14: Add floating action button (FAB)
+- #15: Add AI chatbot interface
+- #16: Implement role-based access control
+- #17: Add confetti animations
+- #18: Add skeleton loading states
+- #19: Add page transitions with Framer Motion
+- #20: Create admin panel with CMS builder

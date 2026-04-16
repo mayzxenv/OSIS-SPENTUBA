@@ -1,0 +1,241 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-white text-slate-900;
+    overflow-x: hidden;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  html.dark body {
+    background-color: #020617;
+    color: #e2e8f0;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  }
+
+  .surface,
+  .card,
+  .panel {
+    @apply bg-white text-slate-900 border border-slate-200;
+  }
+
+  html.dark .surface,
+  html.dark .card,
+  html.dark .panel {
+    background-color: #0f172a !important;
+    color: #e2e8f0 !important;
+    border-color: #334155 !important;
+  }
+
+  html.dark .bg-white,
+  html.dark .bg-white\/95,
+  html.dark .bg-white\/90,
+  html.dark .bg-white\/85,
+  html.dark .bg-white\/80,
+  html.dark .bg-white\/70,
+  html.dark .bg-white\/60,
+  html.dark .bg-white\/50,
+  html.dark .bg-white\/40,
+  html.dark .bg-white\/30,
+  html.dark .bg-white\/20,
+  html.dark .bg-white\/10 {
+    background-color: #0f172a !important;
+  }
+
+  html.dark .bg-gray-50,
+  html.dark .bg-indigo-50,
+  html.dark .bg-purple-50,
+  html.dark .bg-pink-50,
+  html.dark .bg-blue-50,
+  html.dark .bg-rose-50,
+  html.dark .bg-slate-50,
+  html.dark .bg-green-50,
+  html.dark .bg-cyan-50 {
+    background-color: #111827 !important;
+  }
+
+  html.dark .text-gray-900,
+  html.dark .text-gray-800,
+  html.dark .text-gray-700,
+  html.dark .text-gray-600,
+  html.dark .text-gray-500,
+  html.dark .text-gray-400,
+  html.dark .text-gray-300 {
+    color: #cbd5e1 !important;
+  }
+
+  html.dark .border-gray-200,
+  html.dark .border-gray-300,
+  html.dark .border-gray-100 {
+    border-color: #334155 !important;
+  }
+
+  html.dark .hover\:bg-white:hover,
+  html.dark .hover\:bg-gray-100:hover,
+  html.dark .hover\:bg-gray-50:hover {
+    background-color: #111827 !important;
+  }
+}
+
+@layer utilities {
+  /* Blob animation for background elements */
+  @keyframes blob {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+  }
+
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+
+  /* Smooth scroll */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gradient-to-b from-indigo-500 to-purple-500 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply from-indigo-600 to-purple-600;
+  }
+}
+
+@media (max-width: 640px) {
+  body {
+    font-size: 0.95rem;
+  }
+
+  h1 {
+    font-size: 2rem !important;
+    line-height: 1.15 !important;
+  }
+
+  h2 {
+    font-size: 1.4rem !important;
+    line-height: 1.25 !important;
+  }
+
+  h3 {
+    font-size: 1.15rem !important;
+  }
+
+  p,
+  a,
+  span,
+  label,
+  button {
+    line-height: 1.4 !important;
+  }
+
+  .text-6xl {
+    font-size: 2.4rem !important;
+  }
+
+  .text-5xl {
+    font-size: 2.2rem !important;
+  }
+
+  .text-4xl {
+    font-size: 1.8rem !important;
+  }
+
+  .text-3xl {
+    font-size: 1.6rem !important;
+  }
+
+  .text-2xl {
+    font-size: 1.35rem !important;
+  }
+
+  .text-xl {
+    font-size: 1.1rem !important;
+  }
+
+  .text-lg {
+    font-size: 1rem !important;
+  }
+
+  .text-base {
+    font-size: 0.95rem !important;
+  }
+
+  .p-6,
+  .p-8,
+  .px-6,
+  .py-6,
+  .px-8,
+  .py-8 {
+    padding: 0.9rem !important;
+  }
+
+  .p-4,
+  .px-4,
+  .py-4 {
+    padding: 0.75rem !important;
+  }
+
+  .gap-6,
+  .gap-8,
+  .space-y-6,
+  .space-y-8,
+  .space-y-10 {
+    gap: 0.75rem !important;
+  }
+
+  .mb-6,
+  .mb-8,
+  .mb-10,
+  .mb-12,
+  .mb-16 {
+    margin-bottom: 0.9rem !important;
+  }
+
+  .pt-24,
+  .pb-16 {
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+
+  .rounded-2xl {
+    border-radius: 1rem !important;
+  }
+}
