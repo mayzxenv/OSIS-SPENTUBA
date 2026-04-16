@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { setCookie } from "hono/cookie";
+import { cors } from "hono/cors";
 
 interface Env {
   DB: any;
@@ -7,6 +8,15 @@ interface Env {
 }
 
 const app = new Hono<{ Bindings: Env }>();
+
+app.use(
+  "/api/*",
+  cors({
+    origin: "*",
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "X-Admin-Code"],
+  })
+);
 
 // Mock OAuth endpoints (for compatibility)
 app.get("/api/oauth/google/redirect_url", async (c) => {
