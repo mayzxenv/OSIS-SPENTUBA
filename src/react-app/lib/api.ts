@@ -1,4 +1,5 @@
 const RUNTIME_API_BASE_URL_KEY = "osis_api_base_url";
+const DEFAULT_API_BASE_URL = "https://019bd78e-c6c9-70be-99f0-e319b1d30389.osis-spentuba.workers.dev";
 
 function normalizeBaseUrl(value: string): string {
   return value.trim().replace(/\/$/, "");
@@ -20,7 +21,7 @@ function getRuntimeApiBaseUrl(): string {
 }
 
 const apiBaseUrl = normalizeBaseUrl(
-  (import.meta.env.VITE_API_BASE_URL || "").trim() || getRuntimeApiBaseUrl()
+  (import.meta.env.VITE_API_BASE_URL || "").trim() || getRuntimeApiBaseUrl() || DEFAULT_API_BASE_URL
 );
 
 export function apiUrl(path: string): string {
