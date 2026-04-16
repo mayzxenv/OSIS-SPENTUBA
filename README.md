@@ -15,4 +15,9 @@ npm run build
 vercel deploy --prod
 ```
 
-The project includes `vercel.json` to build with `@vercel/static-build` and route SPA requests to `index.html`.
+Set this environment variable in Vercel so frontend can reach the API backend:
+```
+VITE_API_BASE_URL=https://YOUR-CLOUDFLARE-WORKER-URL
+```
+
+The project includes `vercel.json` to run the build and route SPA requests to `index.html`.

@@ -2,6 +2,7 @@ import Navbar from '../components/Navbar';
 import { ArrowLeft, Lightbulb, TrendingUp, CheckCircle, Clock, Flame, ThumbsUp, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router';
 import { useState, useEffect } from 'react';
+import { apiUrl } from '@/react-app/lib/api';
 
 export default function BankIde() {
   const [showForm, setShowForm] = useState(false);
@@ -44,7 +45,7 @@ export default function BankIde() {
   useEffect(() => {
     const fetchIdeas = async () => {
       try {
-        const response = await fetch('/api/ideas');
+        const response = await fetch(apiUrl('/api/ideas'));
         if (response.ok) {
           const data = await response.json();
           const storedStatuses = JSON.parse(localStorage.getItem('osis_idea_statuses') || '{}');
@@ -72,7 +73,7 @@ export default function BankIde() {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/ideas', {
+      const response = await fetch(apiUrl('/api/ideas'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

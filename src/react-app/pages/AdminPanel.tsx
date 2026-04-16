@@ -2,6 +2,7 @@ import Navbar from '../components/Navbar';
 import { ArrowLeft, Shield, BarChart3, MessageSquare, Heart, Lightbulb, AlertCircle, ImagePlus, Trash2, Edit2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { apiUrl } from '@/react-app/lib/api';
 
 export default function AdminPanel() {
   const [adminCode, setAdminCode] = useState('');
@@ -54,7 +55,7 @@ export default function AdminPanel() {
     }
 
     try {
-      const response = await fetch('/api/admin/verify-code', {
+      const response = await fetch(apiUrl('/api/admin/verify-code'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: adminCode.trim() }),
@@ -67,6 +68,8 @@ export default function AdminPanel() {
         const data = await response.json().catch(() => null);
         if (response.status === 404) {
           setErrorMessage('API admin tidak ditemukan. Pastikan backend worker dijalankan.');
+        } else if (response.status === 405) {
+          setErrorMessage('Metode login tidak didukung di host ini. Hubungkan frontend ke backend API (VITE_API_BASE_URL).');
         } else {
           setErrorMessage(data?.error || `Kode akses salah. (${response.status})`);
         }
@@ -78,7 +81,7 @@ export default function AdminPanel() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch(`/api/admin/stats?admin_code=${adminCode}`);
+      const response = await fetch(apiUrl(`/api/admin/stats?admin_code=${encodeURIComponent(adminCode)}`));
       if (response.ok) {
         const data = await response.json();
         setStats(data);
@@ -110,7 +113,7 @@ export default function AdminPanel() {
 
   const fetchIdeasList = async () => {
     try {
-      const response = await fetch('/api/ideas');
+      const response = await fetch(apiUrl('/api/ideas'));
       if (response.ok) {
         const data = await response.json();
         const storedStatuses = JSON.parse(localStorage.getItem('osis_idea_statuses') || '{}');
@@ -127,7 +130,7 @@ export default function AdminPanel() {
 
   const fetchForumThreads = async () => {
     try {
-      const response = await fetch('/api/forum/threads');
+      const response = await fetch(apiUrl('/api/forum/threads'));
       if (response.ok) {
         setForumThreads(await response.json());
       }
@@ -138,7 +141,7 @@ export default function AdminPanel() {
 
   const fetchReports = async () => {
     try {
-      const response = await fetch(`/api/bullying-reports?admin_code=${adminCode}`);
+      const response = await fetch(apiUrl(`/api/bullying-reports?admin_code=${encodeURIComponent(adminCode)}`));
       if (response.ok) {
         setReportsList(await response.json());
       }
@@ -170,7 +173,7 @@ export default function AdminPanel() {
 
   const handleDeleteIdea = async (id: number) => {
     try {
-      const response = await fetch(`/api/ideas/${id}?admin_code=${adminCode}`, { method: 'DELETE' });
+      const response = await fetch(apiUrl(`/api/ideas/${id}?admin_code=${encodeURIComponent(adminCode)}`), { method: 'DELETE' });
       if (response.ok) {
         setIdeasList((prev) => prev.filter((idea) => idea.id !== id));
       }
@@ -193,7 +196,7 @@ export default function AdminPanel() {
 
   const handleDeleteForumThread = async (id: number) => {
     try {
-      const response = await fetch(`/api/forum/threads/${id}?admin_code=${adminCode}`, { method: 'DELETE' });
+      const response = await fetch(apiUrl(`/api/forum/threads/${id}?admin_code=${encodeURIComponent(adminCode)}`), { method: 'DELETE' });
       if (response.ok) {
         setForumThreads((prev) => prev.filter((thread) => thread.id !== id));
       }
@@ -204,7 +207,7 @@ export default function AdminPanel() {
 
   const handleDeleteReport = async (id: number) => {
     try {
-      const response = await fetch(`/api/bullying-reports/${id}?admin_code=${adminCode}`, { method: 'DELETE' });
+      const response = await fetch(apiUrl(`/api/bullying-reports/${id}?admin_code=${encodeURIComponent(adminCode)}`), { method: 'DELETE' });
       if (response.ok) {
         setReportsList((prev) => prev.filter((report) => report.id !== id));
       }

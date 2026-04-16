@@ -2,6 +2,7 @@ import Navbar from '../components/Navbar';
 import { ArrowLeft, MessageSquare, TrendingUp, Clock, Pin, Lock, ThumbsUp, MessageCircle, Eye } from 'lucide-react';
 import { Link } from 'react-router';
 import { useEffect, useState } from 'react';
+import { apiUrl } from '@/react-app/lib/api';
 
 export default function Forum() {
   const [showNewThread, setShowNewThread] = useState(false);
@@ -43,7 +44,7 @@ export default function Forum() {
   useEffect(() => {
     const fetchThreads = async () => {
       try {
-        const response = await fetch('/api/forum/threads');
+        const response = await fetch(apiUrl('/api/forum/threads'));
         if (response.ok) {
           const data = await response.json();
           setThreads(data);
@@ -79,7 +80,7 @@ export default function Forum() {
     setIsPosting(true);
 
     try {
-      const response = await fetch('/api/forum/threads', {
+      const response = await fetch(apiUrl('/api/forum/threads'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -2,6 +2,7 @@ import Navbar from '../components/Navbar';
 import { ArrowLeft, Heart, AlertCircle, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
+import { apiUrl } from '@/react-app/lib/api';
 
 export default function RuangPribadi() {
   const [formData, setFormData] = useState({
@@ -34,7 +35,7 @@ export default function RuangPribadi() {
     }
 
     try {
-      const response = await fetch('/api/bullying-reports', {
+      const response = await fetch(apiUrl('/api/bullying-reports'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

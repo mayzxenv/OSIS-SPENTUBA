@@ -2,6 +2,7 @@ import Navbar from '../components/Navbar';
 import { ArrowLeft, ThumbsUp, Star, Award, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { apiUrl } from '@/react-app/lib/api';
 
 interface Appreciation {
   id: number;
@@ -68,8 +69,8 @@ export default function Apresiasi() {
   const fetchData = async () => {
     try {
       const [apprRes, leaderRes] = await Promise.all([
-        fetch('/api/appreciations'),
-        fetch('/api/appreciations/leaderboard'),
+        fetch(apiUrl('/api/appreciations')),
+        fetch(apiUrl('/api/appreciations/leaderboard')),
       ]);
       
       const apprData = await apprRes.json();
@@ -100,7 +101,7 @@ export default function Apresiasi() {
     setSubmitting(true);
 
     try {
-      const response = await fetch('/api/appreciations', {
+      const response = await fetch(apiUrl('/api/appreciations'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
