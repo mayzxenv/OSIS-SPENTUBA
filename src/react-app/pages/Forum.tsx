@@ -6,6 +6,7 @@ import { useState } from 'react';
 export default function Forum() {
   const [showNewThread, setShowNewThread] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [threadCategory, setThreadCategory] = useState<string>('');
 
   const categories = [
     { id: 'all', name: 'Semua', icon: MessageSquare, color: 'text-gray-600' },
@@ -118,12 +119,26 @@ export default function Forum() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Kategori *
                   </label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                    <option value="">Pilih Kategori</option>
-                    <option value="event">Event</option>
-                    <option value="kritik">Kritik & Saran</option>
-                    <option value="ide">Ide Kegiatan</option>
-                  </select>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    {categories
+                      .filter((cat) => cat.id !== 'all')
+                      .map((cat) => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setThreadCategory(cat.id)}
+                          className={`w-full flex items-center gap-2 px-4 py-3 rounded-xl border text-left transition-all ${
+                            threadCategory === cat.id
+                              ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-transparent shadow-lg shadow-blue-500/20'
+                              : 'bg-white text-gray-700 border border-gray-300 hover:border-blue-300 hover:bg-slate-50'
+                          }`}
+                        >
+                          <cat.icon className={`w-4 h-4 ${threadCategory === cat.id ? 'text-white' : cat.color}`} />
+                          <span>{cat.name}</span>
+                        </button>
+                      ))}
+                  </div>
+                  <input type="hidden" name="category" value={threadCategory} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
