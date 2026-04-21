@@ -16,7 +16,7 @@ export default function StrukturOrganisasi() {
     {
       position: 'Pembina OSIS',
       name: 'JUMHARI, S.Pd.',
-      photo: '',
+      photo: 'jumhari.jpeg',
       description: 'Membimbing OSIS dalam merancang program kerja dan mendampingi kegiatan sekolah.',
       contact: {
         phone: '081234567890',
