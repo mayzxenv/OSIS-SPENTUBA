@@ -12,25 +12,20 @@ function getRuntimeApiBaseUrl(): string {
   if (typeof window === "undefined") {
     return "";
   }
-
   const params = new URLSearchParams(window.location.search);
   const queryBaseUrl = (params.get("api_base_url") || "").trim();
+
+  // Support one-time debug override via query param only. Deliberately ignore
+  // any values persisted in sessionStorage/localStorage to prevent per-browser
+  // divergence — clients should use the environment `VITE_API_BASE_URL` when
+  // a non-relative API host is required for all users.
   if (queryBaseUrl) {
-    // Allow a temporary override via query param but do NOT persist it to storage
-    // to avoid cross-browser/local-cache confusion. Use this for one-time debugging.
-    // The code previously persisted this value which caused different browsers
-    // to talk to different API backends unexpectedly.
     // eslint-disable-next-line no-console
     console.warn('[osis] api_base_url override detected in query string — using for this load only.');
     return queryBaseUrl;
   }
 
-  const runtimeValue = (sessionStorage.getItem(RUNTIME_API_BASE_URL_KEY) || "").trim();
-  const legacyValue = (localStorage.getItem(RUNTIME_API_BASE_URL_KEY) || "").trim();
-
-  // Prefer explicit runtime/session override when present; keep legacy localStorage
-  // for backward compatibility but do not auto-migrate values.
-  return runtimeValue || legacyValue || "";
+  return "";
 }
 
 const apiBaseUrl = normalizeBaseUrl(
