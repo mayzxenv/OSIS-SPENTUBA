@@ -1,4 +1,3 @@
-const RUNTIME_API_BASE_URL_KEY = "osis_api_base_url";
 // Keep default empty so the frontend uses relative `/api/...` paths by default.
 // This prevents unintentional cross-browser/backend mismatches when
 // `VITE_API_BASE_URL` is not set in the environment.
