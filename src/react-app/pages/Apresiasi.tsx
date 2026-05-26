@@ -93,8 +93,8 @@ export default function Apresiasi() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.from_user_name.trim() || !formData.to_name.trim()) {
-      alert('Mohon isi nama pengirim dan nama penerima apresiasi');
+    if ((!formData.is_anonymous && !formData.from_user_name.trim()) || !formData.to_name.trim()) {
+      alert('Mohon isi nama penerima apresiasi, dan isi nama pengirim jika tidak anonim');
       return;
     }
 
@@ -107,7 +107,7 @@ export default function Apresiasi() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from_user_name: formData.from_user_name,
+          from_user_name: formData.is_anonymous ? 'Anonim' : formData.from_user_name,
           to_name: formData.to_name,
           type: selectedType,
           message: formData.message,
@@ -199,7 +199,7 @@ export default function Apresiasi() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-slate-200 mb-2">
                         Nama Anda
                       </label>
                       <input
@@ -207,13 +207,14 @@ export default function Apresiasi() {
                         name="from_user_name"
                         value={formData.from_user_name}
                         onChange={handleChange}
-                        placeholder="Masukkan nama Anda"
-                        className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-indigo-500 focus:outline-none transition-colors"
-                        required
+                        placeholder={formData.is_anonymous ? 'Boleh dikosongkan karena anonim aktif' : 'Masukkan nama Anda'}
+                        disabled={formData.is_anonymous}
+                        className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 bg-white text-slate-900 focus:border-indigo-500 focus:outline-none transition-colors dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
+                        required={!formData.is_anonymous}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-slate-200 mb-2">
                         Nama Penerima Apresiasi
                       </label>
                       <input
@@ -222,14 +223,14 @@ export default function Apresiasi() {
                         value={formData.to_name}
                         onChange={handleChange}
                         placeholder="Siapa yang ingin Anda apresiasi?"
-                        className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-indigo-500 focus:outline-none transition-colors"
+                        className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 bg-white text-slate-900 focus:border-indigo-500 focus:outline-none transition-colors dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
                         required
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-slate-200 mb-2">
                       Pesan Apresiasi (Opsional)
                     </label>
                     <textarea
@@ -238,7 +239,7 @@ export default function Apresiasi() {
                       onChange={handleChange}
                       placeholder="Tuliskan alasan apresiasi Anda..."
                       rows={4}
-                      className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-indigo-500 focus:outline-none transition-colors resize-none"
+                      className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 bg-white text-slate-900 focus:border-indigo-500 focus:outline-none transition-colors resize-none dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
                     />
                   </div>
 
@@ -250,7 +251,7 @@ export default function Apresiasi() {
                       onChange={handleChange}
                       className="w-5 h-5 rounded-lg border-2 border-gray-300 cursor-pointer"
                     />
-                    <span className="text-gray-700 font-medium">Kirim sebagai Anonim</span>
+                    <span className="text-gray-700 dark:text-slate-200 font-medium">Kirim sebagai Anonim</span>
                   </label>
 
                   <div className="flex gap-4">
@@ -267,7 +268,7 @@ export default function Apresiasi() {
                         setShowForm(false);
                         setSelectedType('');
                       }}
-                      className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors"
+                      className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
                     >
                       Batal
                     </button>
@@ -277,29 +278,29 @@ export default function Apresiasi() {
             )}
 
             {/* Appreciations List */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg">
-              <h2 className="text-2xl font-bold mb-6 text-gray-800">Apresiasi Terbaru</h2>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-slate-700">
+              <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-slate-100">Apresiasi Terbaru</h2>
               {loading ? (
-                <p className="text-gray-500 py-8">Memuat apresiasi...</p>
+                <p className="text-gray-500 dark:text-slate-400 py-8">Memuat apresiasi...</p>
               ) : appreciations.length === 0 ? (
-                <p className="text-gray-500 py-8">Belum ada apresiasi. Jadilah yang pertama! 💝</p>
+                <p className="text-gray-500 dark:text-slate-400 py-8">Belum ada apresiasi. Jadilah yang pertama! 💝</p>
               ) : (
                 <div className="space-y-4">
                   {appreciations.slice(0, 10).map((appreciation) => (
-                    <div key={appreciation.id} className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg">
+                    <div key={appreciation.id} className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 rounded-lg border border-indigo-100 dark:border-slate-700">
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <p className="font-semibold text-gray-800">
+                          <p className="font-semibold text-gray-800 dark:text-slate-100">
                             {appreciation.is_anonymous ? 'Anonim' : appreciation.from_user_name}
                           </p>
-                          <p className="text-sm text-gray-600">untuk <strong>{appreciation.to_name}</strong></p>
+                          <p className="text-sm text-gray-600 dark:text-slate-300">untuk <strong>{appreciation.to_name}</strong></p>
                         </div>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 dark:text-slate-400">
                           {new Date(appreciation.created_at).toLocaleDateString('id-ID')}
                         </span>
                       </div>
                       {appreciation.message && (
-                        <p className="text-gray-700 text-sm mt-2">"{appreciation.message}"</p>
+                        <p className="text-gray-700 dark:text-slate-200 text-sm mt-2">"{appreciation.message}"</p>
                       )}
                     </div>
                   ))}
@@ -310,24 +311,24 @@ export default function Apresiasi() {
 
           {/* Leaderboard */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl p-8 shadow-lg sticky top-24">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-lg sticky top-24 border border-gray-200 dark:border-slate-700">
               <div className="flex items-center gap-2 mb-6">
                 <Trophy className="w-6 h-6 text-yellow-500" />
-                <h2 className="text-2xl font-bold text-gray-800">Papan Peringkat Bulan Ini</h2>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100">Papan Peringkat Bulan Ini</h2>
               </div>
               {loading ? (
-                <p className="text-gray-500">Memuat...</p>
+                <p className="text-gray-500 dark:text-slate-400">Memuat...</p>
               ) : leaderboard.length === 0 ? (
-                <p className="text-gray-500">Belum ada apresiasi bulan ini</p>
+                <p className="text-gray-500 dark:text-slate-400">Belum ada apresiasi bulan ini</p>
               ) : (
                 <div className="space-y-3">
                   {leaderboard.map((entry, index) => (
-                    <div key={index} className="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg">
+                    <div key={index} className="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 rounded-lg border border-indigo-100 dark:border-slate-700">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <span className="text-2xl font-bold text-indigo-600">#{index + 1}</span>
                           <div>
-                            <p className="font-semibold text-gray-800">{entry.to_name}</p>
+                            <p className="font-semibold text-gray-800 dark:text-slate-100">{entry.to_name}</p>
                           </div>
                         </div>
                         <span className="text-xl font-bold text-purple-600">{entry.count}x</span>

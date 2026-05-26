@@ -1,21 +1,49 @@
 import Navbar from '../components/Navbar';
-import { ArrowLeft, MessageSquare, TrendingUp, Clock, Pin, Lock, ThumbsUp, MessageCircle, Eye } from 'lucide-react';
+import { ArrowLeft, Clock, Eye, Lock, MessageCircle, MessageSquare, Pin, Reply, Send, ThumbsUp, TrendingUp, UserRound } from 'lucide-react';
 import { Link } from 'react-router';
 import { useEffect, useState } from 'react';
 import { apiUrl } from '@/react-app/lib/api';
+
+type ForumThread = {
+  id: number;
+  user_name: string;
+  title: string;
+  content: string;
+  category: string;
+  is_pinned?: number | boolean;
+  is_locked?: number | boolean;
+  likes: number;
+  replies: number;
+  views: number;
+  created_at?: string;
+};
+
+type ForumReply = {
+  id: number;
+  thread_id: number;
+  user_name: string;
+  content: string;
+  likes: number;
+  created_at: string;
+};
 
 export default function Forum() {
   const [showNewThread, setShowNewThread] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [threadCategory, setThreadCategory] = useState<string>('');
-  const [threads, setThreads] = useState<any[]>([]);
+  const [threads, setThreads] = useState<ForumThread[]>([]);
+  const [expandedThreadId, setExpandedThreadId] = useState<number | null>(null);
+  const [repliesByThread, setRepliesByThread] = useState<Record<number, ForumReply[]>>({});
+  const [replyDrafts, setReplyDrafts] = useState<Record<number, { user_name: string; content: string }>>({});
   const [threadAuthor, setThreadAuthor] = useState('');
+  const [isAnonymousThread, setIsAnonymousThread] = useState(false);
   const [threadTitle, setThreadTitle] = useState('');
   const [threadContent, setThreadContent] = useState('');
   const [threadError, setThreadError] = useState('');
   const [threadSuccess, setThreadSuccess] = useState('');
   const [forumError, setForumError] = useState('');
   const [isPosting, setIsPosting] = useState(false);
+  const [replyingThreadId, setReplyingThreadId] = useState<number | null>(null);
 
   const categories = [
     { id: 'all', name: 'Semua', icon: MessageSquare, color: 'text-gray-600' },
@@ -24,67 +52,148 @@ export default function Forum() {
     { id: 'ide', name: 'Ide Kegiatan', icon: MessageSquare, color: 'text-purple-600' },
   ];
 
-  const todayThreadsCount = threads.filter((thread) => {
-    if (!thread?.created_at) return false;
-    const created = new Date(thread.created_at);
-    const now = new Date();
-    return (
-      created.getDate() === now.getDate() &&
-      created.getMonth() === now.getMonth() &&
-      created.getFullYear() === now.getFullYear()
-    );
-  }).length;
+  const fetchThreads = async () => {
+    try {
+      const response = await fetch(apiUrl('/api/forum/threads'));
+      if (!response.ok) {
+        setForumError(`Gagal memuat thread forum. Status: ${response.status}`);
+        return;
+      }
 
-  const stats = [
-    { icon: MessageSquare, value: threads.length.toString(), label: 'Thread Aktif', color: 'text-blue-600' },
-    { icon: MessageCircle, value: threads.length.toString(), label: 'Diskusi', color: 'text-purple-600' },
-    { icon: TrendingUp, value: todayThreadsCount.toString(), label: 'Aktivitas Hari Ini', color: 'text-green-600' },
-  ];
+      const data = await response.json();
+      setThreads(Array.isArray(data) ? data : []);
+      setForumError('');
+    } catch (error) {
+      console.error('Error loading forum threads:', error);
+      setForumError('Tidak dapat terhubung ke server forum.');
+    }
+  };
 
   useEffect(() => {
-    const fetchThreads = async () => {
-      try {
-        const response = await fetch(apiUrl('/api/forum/threads'));
-        if (response.ok) {
-          const data = await response.json();
-          setThreads(data);
-          setForumError('');
-        } else if (response.status === 404) {
-          setForumError('API forum tidak ditemukan. Pastikan backend worker dijalankan.');
-        } else {
-          setForumError(`Gagal memuat thread forum. Status: ${response.status}`);
-        }
-      } catch (error) {
-        console.error('Error loading forum threads:', error);
-        setForumError('Tidak dapat terhubung ke server forum.');
-      }
-    };
-
     fetchThreads();
   }, []);
 
   const filteredThreads = selectedCategory === 'all'
     ? threads
-    : threads.filter((t) => t.category === selectedCategory);
+    : threads.filter((thread) => thread.category === selectedCategory);
+
+  const todayThreadsCount = threads.filter((thread) => {
+    if (!thread.created_at) return false;
+    const created = new Date(thread.created_at);
+    const now = new Date();
+    return created.toDateString() === now.toDateString();
+  }).length;
+
+  const stats = [
+    { icon: MessageSquare, value: threads.length.toString(), label: 'Thread Aktif', color: 'text-blue-600' },
+    { icon: MessageCircle, value: threads.reduce((sum, t) => sum + Number(t.replies || 0), 0).toString(), label: 'Total Balasan', color: 'text-purple-600' },
+    { icon: TrendingUp, value: todayThreadsCount.toString(), label: 'Aktivitas Hari Ini', color: 'text-green-600' },
+  ];
+
+  const loadReplies = async (threadId: number) => {
+    if (repliesByThread[threadId]) {
+      return;
+    }
+
+    try {
+      const response = await fetch(apiUrl(`/api/forum/threads/${threadId}/replies`));
+      if (response.ok) {
+        const data = await response.json();
+        setRepliesByThread((prev) => ({ ...prev, [threadId]: Array.isArray(data) ? data : [] }));
+      }
+    } catch (error) {
+      console.error('Error loading thread replies:', error);
+    }
+  };
+
+  const handleLikeThread = async (threadId: number) => {
+    setThreads((prev) => prev.map((thread) => (thread.id === threadId ? { ...thread, likes: Number(thread.likes || 0) + 1 } : thread)));
+
+    try {
+      const response = await fetch(apiUrl(`/api/forum/threads/${threadId}/like`), { method: 'POST' });
+      if (response.ok) {
+        const payload = await response.json();
+        if (payload?.thread) {
+          setThreads((prev) => prev.map((thread) => (thread.id === threadId ? { ...thread, likes: Number(payload.thread.likes || thread.likes) } : thread)));
+        }
+      }
+    } catch (error) {
+      console.error('Error liking thread:', error);
+    }
+  };
+
+  const handleLikeReply = async (threadId: number, replyId: number) => {
+    try {
+      const response = await fetch(apiUrl(`/api/forum/replies/${replyId}/like`), { method: 'POST' });
+      if (response.ok) {
+        const payload = await response.json();
+        if (payload?.reply) {
+          setRepliesByThread((prev) => ({
+            ...prev,
+            [threadId]: (prev[threadId] || []).map((reply) =>
+              reply.id === replyId ? { ...reply, likes: Number(payload.reply.likes || reply.likes) } : reply
+            ),
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error liking reply:', error);
+    }
+  };
+
+  const handleReplySubmit = async (threadId: number) => {
+    const draft = replyDrafts[threadId];
+    if (!draft?.user_name.trim() || !draft?.content.trim()) {
+      return;
+    }
+
+    setReplyingThreadId(threadId);
+    try {
+      const response = await fetch(apiUrl(`/api/forum/threads/${threadId}/replies`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draft),
+      });
+
+      if (response.ok) {
+        const payload = await response.json();
+        if (payload?.reply) {
+          setRepliesByThread((prev) => ({
+            ...prev,
+            [threadId]: [...(prev[threadId] || []), payload.reply],
+          }));
+          setThreads((prev) => prev.map((thread) => (thread.id === threadId ? { ...thread, replies: Number(thread.replies || 0) + 1 } : thread)));
+          setReplyDrafts((prev) => ({
+            ...prev,
+            [threadId]: { user_name: '', content: '' },
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error posting reply:', error);
+    } finally {
+      setReplyingThreadId(null);
+    }
+  };
 
   const handleNewThreadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setThreadError('');
     setThreadSuccess('');
 
-    if (!threadAuthor.trim() || !threadTitle.trim() || !threadCategory || !threadContent.trim()) {
+    if ((!isAnonymousThread && !threadAuthor.trim()) || !threadTitle.trim() || !threadCategory || !threadContent.trim()) {
       setThreadError('Mohon lengkapi semua kolom thread.');
       return;
     }
 
     setIsPosting(true);
-
     try {
       const response = await fetch(apiUrl('/api/forum/threads'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_name: threadAuthor,
+          user_name: isAnonymousThread ? 'Anonim' : threadAuthor,
+          user_avatar: '',
           title: threadTitle,
           content: threadContent,
           category: threadCategory,
@@ -94,21 +203,11 @@ export default function Forum() {
       if (response.ok) {
         setThreadSuccess('Thread berhasil dikirim.');
         setThreadAuthor('');
+        setIsAnonymousThread(false);
         setThreadTitle('');
         setThreadContent('');
         setThreadCategory('');
-        const newThread = {
-          id: Date.now(),
-          user_name: threadAuthor,
-          title: threadTitle,
-          content: threadContent,
-          category: threadCategory,
-          lastReply: 'Baru saja',
-          likes: 0,
-          replies: 0,
-          views: 0,
-        };
-        setThreads((prev) => [newThread, ...prev]);
+        await fetchThreads();
       } else {
         setThreadError('Gagal mengirim thread. Silakan coba lagi.');
       }
@@ -123,66 +222,62 @@ export default function Forum() {
   return (
     <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <Navbar />
-      
-      <div className="pt-24 pb-16">
+
+      <div className="relative overflow-hidden pt-20 pb-16">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.12),_transparent_30%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.12),_transparent_35%),linear-gradient(to_bottom,_#f8fbff,_#ffffff_35%,_#f8fafc)]" />
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="mb-12">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 text-gray-600 hover:text-indigo-600 transition-colors mb-4 group"
-            >
-              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-              <span className="font-medium">Kembali ke Home</span>
+          <div className="mb-10">
+            <Link to="/" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-600 shadow-sm backdrop-blur hover:text-blue-600">
+              <ArrowLeft className="w-4 h-4" />
+              Kembali ke Home
             </Link>
-            
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+
+            <div className="mt-5 flex items-start gap-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-600 to-cyan-500 shadow-lg shadow-blue-500/25">
                 <MessageSquare className="w-8 h-8 text-white" />
               </div>
-              <div>
-                <h1 className="text-4xl md:text-5xl font-black font-['Space_Grotesk']">
-                  <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+              <div className="max-w-3xl">
+                <h1 className="text-4xl md:text-6xl font-black leading-tight font-['Space_Grotesk']">
+                  <span className="bg-gradient-to-r from-blue-700 via-cyan-600 to-sky-500 bg-clip-text text-transparent">
                     Forum Diskusi
                   </span>
                 </h1>
-                <p className="text-xl text-gray-600 mt-1">
-                  Berbagi pendapat dan diskusi dengan komunitas sekolah
+                <p className="mt-3 text-base md:text-lg text-slate-600">
+                  Tempat berbagi pendapat, memberi balasan, dan menyukai diskusi yang bermanfaat.
                 </p>
               </div>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-4 mt-6">
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
               {stats.map((stat) => (
-                <div key={stat.label} className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                <div key={stat.label} className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm backdrop-blur">
                   <div className="flex items-center gap-2 mb-1">
                     <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                    <span className="text-2xl font-bold text-gray-800">{stat.value}</span>
+                    <span className="text-2xl font-black text-slate-900">{stat.value}</span>
                   </div>
-                  <p className="text-sm text-gray-600">{stat.label}</p>
+                  <p className="text-sm text-slate-600">{stat.label}</p>
                 </div>
               ))}
             </div>
 
             {forumError && (
-              <div className="mt-6 rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+              <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm">
                 {forumError}
               </div>
             )}
           </div>
 
-          {/* Action Bar */}
-          <div className="flex flex-col lg:flex-row gap-4 mb-8">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center mb-8">
             <div className="flex flex-wrap gap-2">
               {categories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all ${
                     selectedCategory === cat.id
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                      : 'bg-white text-gray-700 border border-gray-200 hover:border-blue-300'
+                      ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/15'
+                      : 'border border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:text-sky-700'
                   }`}
                 >
                   <cat.icon className="w-4 h-4" />
@@ -190,68 +285,69 @@ export default function Forum() {
                 </button>
               ))}
             </div>
+
             <button
               onClick={() => setShowNewThread(!showNewThread)}
-              className="lg:ml-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/30 transition-all hover:-translate-y-0.5 flex items-center gap-2 justify-center"
+              className="lg:ml-auto inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-cyan-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-transform hover:-translate-y-0.5"
             >
-              <MessageSquare className="w-5 h-5" />
+              <MessageSquare className="w-4 h-4" />
               Buat Thread Baru
             </button>
           </div>
 
-          {/* New Thread Form */}
           {showNewThread && (
-            <div className="bg-white rounded-2xl shadow-xl p-6 mb-8 border border-gray-200 animate-in slide-in-from-top duration-300">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Buat Diskusi Baru</h3>
+            <div className="mb-8 rounded-[2rem] border border-slate-200 bg-white p-5 sm:p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
+              <h3 className="text-2xl font-black text-slate-900 mb-4">Buat Diskusi Baru</h3>
               <form className="space-y-4" onSubmit={handleNewThreadSubmit}>
-                {threadError && (
-                  <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
-                    {threadError}
+                {threadError && <div className="rounded-2xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">{threadError}</div>}
+                {threadSuccess && <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-700">{threadSuccess}</div>}
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">Nama Pengirim *</label>
+                    <input
+                      type="text"
+                      value={threadAuthor}
+                      onChange={(e) => setThreadAuthor(e.target.value)}
+                      placeholder={isAnonymousThread ? 'Dikosongkan saat anonim aktif' : 'Nama kamu'}
+                      disabled={isAnonymousThread}
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-shadow disabled:bg-slate-100 disabled:text-slate-500 focus:shadow-[0_0_0_3px_rgba(37,99,235,0.12)]"
+                    />
+                    <label className="mt-3 inline-flex items-center gap-2 text-sm text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={isAnonymousThread}
+                        onChange={(e) => setIsAnonymousThread(e.target.checked)}
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      Kirim sebagai anonim
+                    </label>
                   </div>
-                )}
-                {threadSuccess && (
-                  <div className="rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-700">
-                    {threadSuccess}
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">Judul Thread *</label>
+                    <input
+                      type="text"
+                      value={threadTitle}
+                      onChange={(e) => setThreadTitle(e.target.value)}
+                      placeholder="Contoh: Usulan Kegiatan Bakti Sosial Bulanan"
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-shadow focus:shadow-[0_0_0_3px_rgba(37,99,235,0.12)]"
+                    />
                   </div>
-                )}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nama Pengirim *
-                  </label>
-                  <input
-                    type="text"
-                    value={threadAuthor}
-                    onChange={(e) => setThreadAuthor(e.target.value)}
-                    placeholder="Nama kamu"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  />
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Judul Thread *
-                  </label>
-                  <input
-                    type="text"
-                    value={threadTitle}
-                    onChange={(e) => setThreadTitle(e.target.value)}
-                    placeholder="Contoh: Usulan Kegiatan Bakti Sosial Bulanan"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kategori *
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Kategori *</label>
+                  <div className="grid gap-2 md:grid-cols-3">
                     {categories.filter((cat) => cat.id !== 'all').map((cat) => (
                       <button
                         key={cat.id}
                         type="button"
                         onClick={() => setThreadCategory(cat.id)}
-                        className={`w-full rounded-xl px-4 py-3 text-left border transition-all ${
+                        className={`rounded-2xl border px-4 py-3 text-left transition-all ${
                           threadCategory === cat.id
-                            ? 'bg-blue-600 text-white border-transparent shadow-lg shadow-blue-500/20'
-                            : 'bg-white text-gray-700 border border-gray-300 hover:border-blue-300 hover:bg-slate-50'
+                            ? 'border-transparent bg-slate-900 text-white shadow-lg shadow-slate-900/15'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-sky-300'
                         }`}
                       >
                         <div className="flex items-center gap-2">
@@ -262,30 +358,31 @@ export default function Forum() {
                     ))}
                   </div>
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Konten *
-                  </label>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Konten *</label>
                   <textarea
-                    rows={6}
+                    rows={5}
                     value={threadContent}
                     onChange={(e) => setThreadContent(e.target.value)}
                     placeholder="Tulis topik diskusi kamu di sini..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-                  ></textarea>
+                    className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-shadow focus:shadow-[0_0_0_3px_rgba(37,99,235,0.12)]"
+                  />
                 </div>
-                <div className="flex gap-3">
+
+                <div className="flex flex-col gap-3 sm:flex-row">
                   <button
                     type="submit"
                     disabled={isPosting}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/30 transition-all hover:-translate-y-0.5 disabled:opacity-70"
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-opacity disabled:opacity-70"
                   >
-                    💬 {isPosting ? 'Mengirim...' : 'Posting Thread'}
+                    <Send className="w-4 h-4" />
+                    {isPosting ? 'Mengirim...' : 'Posting Thread'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowNewThread(false)}
-                    className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-all"
+                    className="rounded-2xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                   >
                     Batal
                   </button>
@@ -294,72 +391,173 @@ export default function Forum() {
             </div>
           )}
 
-          {/* Threads List */}
           <div className="space-y-4">
-            {filteredThreads.map((thread) => (
-              <div
-                key={thread.id}
-                className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-200 p-6"
-              >
-                <div className="flex gap-4">
-                  <img
-                    src={thread.user_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(thread.user_name || thread.author || 'Anonim')}&background=0D8ABC&color=fff`}
-                    alt={thread.user_name || thread.author || 'Anonim'}
-                    className="w-12 h-12 rounded-full object-cover flex-shrink-0"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {thread.isPinned && (
-                          <span className="flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
-                            <Pin className="w-3 h-3" />
-                            Pinned
+            {filteredThreads.map((thread) => {
+              const isExpanded = expandedThreadId === thread.id;
+              const threadReplies = repliesByThread[thread.id] || [];
+              const replyDraft = replyDrafts[thread.id] || { user_name: '', content: '' };
+
+              return (
+                <article key={thread.id} className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_14px_45px_rgba(15,23,42,0.06)]">
+                  <div className="p-5 sm:p-6">
+                    <div className="flex gap-4">
+                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600">
+                        <UserRound className="w-6 h-6" />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {(thread.is_pinned || (thread as any).isPinned) && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                              <Pin className="w-3 h-3" />
+                              Pinned
+                            </span>
+                          )}
+                          {(thread.is_locked || (thread as any).isLocked) && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                              <Lock className="w-3 h-3" />
+                              Locked
+                            </span>
+                          )}
+                          <span className="inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">
+                            {categories.find((c) => c.id === thread.category)?.name || thread.category}
                           </span>
-                        )}
-                        {thread.isLocked && (
-                          <span className="flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">
-                            <Lock className="w-3 h-3" />
-                            Locked
+                        </div>
+
+                        <h3 className="mt-3 text-2xl font-black text-slate-900">{thread.title}</h3>
+                        <p className="mt-2 line-clamp-2 text-sm md:text-base text-slate-600">{thread.content}</p>
+
+                        <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                          <span className="font-semibold text-slate-700">{thread.user_name || 'Anonim'}</span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            {thread.created_at ? new Date(thread.created_at).toLocaleString('id-ID') : 'Baru saja'}
                           </span>
-                        )}
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-                          {categories.find(c => c.id === thread.category)?.name}
-                        </span>
+                        </div>
+
+                        <div className="mt-5 flex flex-wrap items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => void handleLikeThread(thread.id)}
+                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-blue-300 hover:text-blue-700"
+                          >
+                            <ThumbsUp className="w-4 h-4" />
+                            {thread.likes || 0}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setExpandedThreadId(isExpanded ? null : thread.id);
+                              await loadReplies(thread.id);
+                            }}
+                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-blue-300 hover:text-blue-700"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            {thread.replies || 0} balasan
+                          </button>
+                          <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-600">
+                            <Eye className="w-4 h-4" />
+                            {thread.views || 0}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setExpandedThreadId(thread.id);
+                              await loadReplies(thread.id);
+                            }}
+                            className="ml-auto rounded-full bg-gradient-to-r from-blue-600 to-cyan-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20"
+                          >
+                            {isExpanded ? 'Tutup Thread' : 'Baca Thread'}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-2 hover:text-blue-600 cursor-pointer transition-colors">
-                      {thread.title}
-                    </h3>
-                    <p className="text-gray-600 mb-3 line-clamp-2">{thread.content || thread.excerpt}</p>
-                    <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
-                      <span className="font-medium text-gray-700">{thread.user_name || thread.author || 'Anonim'}</span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {thread.lastReply || (thread.created_at ? new Date(thread.created_at).toLocaleString() : 'Baru saja')}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-6 text-sm">
-                      <button className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors">
-                        <ThumbsUp className="w-4 h-4" />
-                        <span className="font-medium">{thread.likes}</span>
-                      </button>
-                      <button className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors">
-                        <MessageCircle className="w-4 h-4" />
-                        <span className="font-medium">{thread.replies} balasan</span>
-                      </button>
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <Eye className="w-4 h-4" />
-                        <span>{thread.views}</span>
+
+                    {isExpanded && (
+                      <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+                        <div className="grid gap-4 lg:grid-cols-[1fr_0.92fr]">
+                          <div>
+                            <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                              <Reply className="w-4 h-4" />
+                              Balas Thread
+                            </div>
+
+                            <div className="space-y-3">
+                              <input
+                                type="text"
+                                value={replyDraft.user_name}
+                                onChange={(e) =>
+                                  setReplyDrafts((prev) => ({
+                                    ...prev,
+                                    [thread.id]: { ...replyDraft, user_name: e.target.value },
+                                  }))
+                                }
+                                placeholder="Nama kamu"
+                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-shadow focus:shadow-[0_0_0_3px_rgba(37,99,235,0.12)]"
+                              />
+                              <textarea
+                                rows={4}
+                                value={replyDraft.content}
+                                onChange={(e) =>
+                                  setReplyDrafts((prev) => ({
+                                    ...prev,
+                                    [thread.id]: { ...replyDraft, content: e.target.value },
+                                  }))
+                                }
+                                placeholder="Tulis balasan yang sopan dan membantu..."
+                                className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-shadow focus:shadow-[0_0_0_3px_rgba(37,99,235,0.12)]"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => void handleReplySubmit(thread.id)}
+                                disabled={replyingThreadId === thread.id}
+                                className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:opacity-70"
+                              >
+                                <Send className="w-4 h-4" />
+                                {replyingThreadId === thread.id ? 'Mengirim...' : 'Kirim balasan'}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="mb-4 flex items-center justify-between gap-3 text-sm font-semibold text-slate-700">
+                              <span>Daftar Balasan</span>
+                              <span>{threadReplies.length} item</span>
+                            </div>
+
+                            <div className="space-y-3">
+                              {threadReplies.length === 0 ? (
+                                <p className="rounded-2xl bg-white p-4 text-sm text-slate-500">Belum ada balasan. Jadilah yang pertama merespons.</p>
+                              ) : (
+                                threadReplies.map((reply) => (
+                                  <div key={reply.id} className="rounded-2xl bg-white p-4 shadow-sm">
+                                    <div className="flex items-center justify-between gap-3">
+                                      <p className="font-semibold text-slate-800">{reply.user_name}</p>
+                                      <span className="text-xs text-slate-500">{new Date(reply.created_at).toLocaleDateString('id-ID')}</span>
+                                    </div>
+                                    <p className="mt-2 text-sm leading-relaxed text-slate-600">{reply.content}</p>
+                                    <div className="mt-3 flex items-center justify-between gap-3">
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleLikeReply(thread.id, reply.id)}
+                                        className="inline-flex items-center gap-2 text-xs font-semibold text-blue-600"
+                                      >
+                                        <ThumbsUp className="w-3.5 h-3.5" />
+                                        {reply.likes || 0}
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <button className="ml-auto px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/30 transition-all text-xs">
-                        Baca Thread
-                      </button>
-                    </div>
+                    )}
                   </div>
-                </div>
-              </div>
-            ))}
+                </article>
+              );
+            })}
           </div>
         </div>
       </div>

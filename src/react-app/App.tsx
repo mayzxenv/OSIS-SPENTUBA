@@ -8,6 +8,7 @@ import BankIde from "@/react-app/pages/BankIde";
 import Forum from "@/react-app/pages/Forum";
 import AdminPanel from "@/react-app/pages/AdminPanel";
 import RuangPribadi from "@/react-app/pages/RuangPribadi";
+import Contact from "@/react-app/pages/Contact";
 import {
   PanduanPenggunaan,
   FAQ,
@@ -51,6 +52,7 @@ export default function App() {
             <Route path="/privasi" element={<KebijakanPrivasi />} />
             <Route path="/syarat" element={<SyaratKetentuan />} />
             <Route path="/lapor" element={<LaporMasalah />} />
+            <Route path="/kontak" element={<Contact />} />
               </Routes>
             </main>
 

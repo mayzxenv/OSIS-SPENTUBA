@@ -3,6 +3,72 @@ import { ArrowLeft, Phone, Instagram } from 'lucide-react';
 import { Link } from 'react-router';
 import { useState, useEffect } from 'react';
 
+type ContactInfo = {
+  phone: string;
+  instagram: string;
+  tiktok?: string;
+};
+
+type PengurusCard = {
+  position: string;
+  name: string;
+  photo: string;
+  description: string;
+  contact: ContactInfo;
+};
+
+function normalizeSocialHandle(value: string): string {
+  const trimmed = (value || '').trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+
+  return trimmed.replace(/^@+/, '').replace(/^\/+/, '');
+}
+
+function getInstagramUrl(value: string): string {
+  const normalized = normalizeSocialHandle(value);
+  if (!normalized) {
+    return '';
+  }
+
+  if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
+    return normalized;
+  }
+
+  return `https://www.instagram.com/${normalized}`;
+}
+
+function getTikTokUrl(value: string): string {
+  const normalized = normalizeSocialHandle(value);
+  if (!normalized) {
+    return '';
+  }
+
+  if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
+    return normalized;
+  }
+
+  return `https://www.tiktok.com/@${normalized}`;
+}
+
+function formatHandle(value: string): string {
+  const normalized = normalizeSocialHandle(value);
+  if (!normalized) {
+    return '-';
+  }
+
+  if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
+    return normalized;
+  }
+
+  return `@${normalized}`;
+}
+
 export default function StrukturOrganisasi() {
   const [adminPengurus, setAdminPengurus] = useState<any[]>([]);
 
@@ -12,20 +78,20 @@ export default function StrukturOrganisasi() {
       setAdminPengurus(JSON.parse(saved));
     }
   }, []);
-  const pembina = [
+  const pembina: PengurusCard[] = [
     {
       position: 'Pembina OSIS',
       name: 'JUMHARI, S.Pd.',
       photo: 'jumhari.jpeg',
       description: 'Membimbing OSIS dalam merancang program kerja dan mendampingi kegiatan sekolah.',
       contact: {
-        phone: '081234567890',
-        instagram: '@pak_ahmad',
+        phone: '',
+        instagram: '',
       },
     },
   ];
 
-  const struktur = [
+  const struktur: PengurusCard[] = [
     {
       position: 'Ketua OSIS',
       name: 'Iqbal Maulana Haidar',
@@ -33,7 +99,7 @@ export default function StrukturOrganisasi() {
       description: 'Memimpin organisasi siswa dan mengoordinir program kerja OSIS.',
       contact: {
         phone: '081234567892',
-        instagram: '@iqbal',
+        instagram: '@qhaidar___',
       },
     },
     {
@@ -43,7 +109,7 @@ export default function StrukturOrganisasi() {
       description: 'Mendampingi ketua dalam pelaksanaan kegiatan dan komunikasi anggota.',
       contact: {
         phone: '081234567893',
-        instagram: '@rahmat',
+        instagram: '@mayzxz_cybersecurity',
       },
     },
     {
@@ -53,7 +119,7 @@ export default function StrukturOrganisasi() {
       description: 'Membantu koordinasi program kerja dan mendukung kepemimpinan OSIS.',
       contact: {
         phone: '081234567897',
-        instagram: '@fahruddin',
+        instagram: '@dinz_galaxy',
       },
     },
     {
@@ -63,7 +129,7 @@ export default function StrukturOrganisasi() {
       description: 'Mengelola administrasi, dokumentasi, dan laporan kegiatan OSIS.',
       contact: {
         phone: '081234567894',
-        instagram: '@dona',
+        instagram: '@don.aaulia12',
       },
     },
     {
@@ -73,7 +139,7 @@ export default function StrukturOrganisasi() {
       description: 'Menangani pencatatan rapat dan komunikasi narasumber OSIS.',
       contact: {
         phone: '081234567898',
-        instagram: '@vania',
+        instagram: '@peince_ss',
       },
     },
     {
@@ -93,21 +159,32 @@ export default function StrukturOrganisasi() {
       description: 'Membantu pencatatan kas dan pelaporan penggunaan dana OSIS.',
       contact: {
         phone: '081234567899',
-        instagram: '@davina',
+        instagram: '@davinaazzahra5',
       },
     },
   ];
 
-  const wakaSiswa = {
+  const wakaSiswa: PengurusCard = {
     position: 'Wakil Kepala Sekolah Bidang Kesiswaan',
     name: 'Ibu R.Ida wahyuni, S.Pd.',
-    photo: '',
+    photo: 'r.ida.jpeg',
     description: 'Bertanggung jawab atas pembinaan, pengembangan, dan pengawasan siswa serta setiap kegiatan di bidang kesiswaan.',
     contact: {
-      phone: '081234567896',
-      instagram: '@ibu_ida',
-    },
+      phone: '',
+      instagram: '',    },
   };
+
+  const kepalaSekolah: PengurusCard = {
+    position: 'Kepala Sekolah',
+    name: 'Repelita ayu winarni S.pd M.pd',
+    photo: 'lita.png',
+    description: 'Memimpin seluruh kebijakan sekolah, mengarahkan peningkatan mutu pembelajaran, serta memastikan lingkungan sekolah yang aman, disiplin, dan mendukung pengembangan karakter peserta didik.',
+    contact: {
+      phone: '',
+      instagram: '',    },
+  };
+
+  const pimpinanKesiswaan: PengurusCard[] = [kepalaSekolah, wakaSiswa];
 
   const bidang = [
     {
@@ -123,7 +200,7 @@ export default function StrukturOrganisasi() {
       subtitle: 'Membangun karakter positif dan sikap sopan santun',
       members: [
         { role: 'Ketua', name: 'Moh labib afkari', photo: 'afka.png' },
-        { role: 'Anggota', name: 'Lailatul mijrojiah', photo: '' },
+        { role: 'Anggota', name: 'Lailatul mijrojiah', photo: 'laily.jpg' },
       ],
     },
     {
@@ -268,14 +345,25 @@ export default function StrukturOrganisasi() {
                         <span>{pengurus.contact.phone}</span>
                       </a>
                       <a
-                        href={`https://instagram.com/${pengurus.contact.instagram.replace('@', '')}`}
+                        href={getInstagramUrl(pengurus.contact.instagram)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 text-gray-600 hover:text-pink-600 transition-colors"
                       >
                         <Instagram className="w-4 h-4" />
-                        <span>{pengurus.contact.instagram}</span>
+                        <span>{formatHandle(pengurus.contact.instagram)}</span>
                       </a>
+                      {pengurus.contact.tiktok && (
+                        <a
+                          href={getTikTokUrl(pengurus.contact.tiktok)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-gray-600 hover:text-slate-900 transition-colors"
+                        >
+                          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-900 text-[10px] font-bold text-white">T</span>
+                          <span>{formatHandle(pengurus.contact.tiktok)}</span>
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -332,14 +420,25 @@ export default function StrukturOrganisasi() {
                         <span>{pengurus.contact.phone}</span>
                       </a>
                       <a
-                        href={`https://instagram.com/${pengurus.contact.instagram.replace('@', '')}`}
+                        href={getInstagramUrl(pengurus.contact.instagram)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 text-gray-600 hover:text-pink-600 transition-colors"
                       >
                         <Instagram className="w-4 h-4" />
-                        <span>{pengurus.contact.instagram}</span>
+                        <span>{formatHandle(pengurus.contact.instagram)}</span>
                       </a>
+                      {pengurus.contact.tiktok && (
+                        <a
+                          href={getTikTokUrl(pengurus.contact.tiktok)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-gray-600 hover:text-slate-900 transition-colors"
+                        >
+                          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-900 text-[10px] font-bold text-white">T</span>
+                          <span>{formatHandle(pengurus.contact.tiktok)}</span>
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -347,64 +446,78 @@ export default function StrukturOrganisasi() {
             </div>
           </div>
 
-          {/* Wakil Kepala Sekolah Bidang Kesiswaan */}
+          {/* Wakil Kepala Sekolah Bidang Kesiswaan & Kepala Sekolah */}
           <div className="mb-16">
             <h2 className="text-3xl font-bold text-gray-800 mb-8 flex items-center gap-3">
               <div className="w-2 h-8 bg-gradient-to-b from-green-600 to-emerald-600 rounded-full"></div>
-              Wakil Kepala Sekolah Bidang Kesiswaan
+              KEPALA SEKOLAH DAN WAKA KESISWAAN
             </h2>
             
-            <div className="max-w-2xl">
-              <div
-                className="group bg-white dark:bg-slate-900 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 dark:border-slate-700 hover:-translate-y-2"
-              >
-                {/* Photo */}
-                <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-green-100 to-emerald-100">
-                  {wakaSiswa.photo ? (
-                    <img
-                      src={wakaSiswa.photo}
-                      alt={wakaSiswa.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-6xl">👩‍💼</div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </div>
-                
-                {/* Info */}
-                <div className="p-6">
-                  <div className="text-sm font-semibold text-green-600 mb-1">
-                    {wakaSiswa.position}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {pimpinanKesiswaan.map((pimpinan) => (
+                <div
+                  key={pimpinan.position}
+                  className="group bg-white dark:bg-slate-900 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 dark:border-slate-700 hover:-translate-y-2"
+                >
+                  {/* Photo */}
+                  <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-green-100 to-emerald-100">
+                    {pimpinan.photo ? (
+                      <img
+                        src={pimpinan.photo}
+                        alt={pimpinan.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-6xl">👩‍💼</div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-800 mb-3">
-                    {wakaSiswa.name}
-                  </h3>
-                  <p className="text-gray-600 mb-6 leading-relaxed">
-                    {wakaSiswa.description}
-                  </p>
                   
-                  {/* Contact */}
-                  <div className="space-y-3 text-sm">
-                    <a
-                      href={`tel:${wakaSiswa.contact.phone}`}
-                      className="flex items-center gap-2 text-gray-600 hover:text-green-600 transition-colors"
-                    >
-                      <Phone className="w-4 h-4" />
-                      <span>{wakaSiswa.contact.phone}</span>
-                    </a>
-                    <a
-                      href={`https://instagram.com/${wakaSiswa.contact.instagram.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-gray-600 hover:text-pink-600 transition-colors"
-                    >
-                      <Instagram className="w-4 h-4" />
-                      <span>{wakaSiswa.contact.instagram}</span>
-                    </a>
+                  {/* Info */}
+                  <div className="p-6 min-h-[250px]">
+                    <div className="text-sm font-semibold text-green-600 mb-1">
+                      {pimpinan.position}
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-800 mb-3">
+                      {pimpinan.name}
+                    </h3>
+                    <p className="text-gray-600 mb-6 leading-relaxed">
+                      {pimpinan.description}
+                    </p>
+                    
+                    {/* Contact */}
+                    <div className="space-y-3 text-sm">
+                      <a
+                        href={`tel:${pimpinan.contact.phone}`}
+                        className="flex items-center gap-2 text-gray-600 hover:text-green-600 transition-colors"
+                      >
+                        <Phone className="w-4 h-4" />
+                        <span>{pimpinan.contact.phone}</span>
+                      </a>
+                      <a
+                        href={getInstagramUrl(pimpinan.contact.instagram)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-gray-600 hover:text-pink-600 transition-colors"
+                      >
+                        <Instagram className="w-4 h-4" />
+                        <span>{formatHandle(pimpinan.contact.instagram)}</span>
+                      </a>
+                      {pimpinan.contact.tiktok && (
+                        <a
+                          href={getTikTokUrl(pimpinan.contact.tiktok)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-gray-600 hover:text-slate-900 transition-colors"
+                        >
+                          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-900 text-[10px] font-bold text-white">T</span>
+                          <span>{formatHandle(pimpinan.contact.tiktok)}</span>
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
 
@@ -458,21 +571,33 @@ export default function StrukturOrganisasi() {
                           <span>{pengurus.contact.phone}</span>
                         </a>
                         <a
-                          href={`https://instagram.com/${pengurus.contact.instagram.replace('@', '')}`}
+                          href={getInstagramUrl(pengurus.contact.instagram || '')}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1 text-gray-600 hover:text-pink-600 transition-colors truncate"
                         >
                           <Instagram className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">{pengurus.contact.instagram}</span>
+                          <span className="truncate">{formatHandle(pengurus.contact.instagram || '')}</span>
                         </a>
+                        {pengurus.contact?.tiktok && (
+                          <a
+                            href={getTikTokUrl(pengurus.contact.tiktok)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-gray-600 hover:text-slate-900 transition-colors truncate"
+                          >
+                            <span className="inline-flex h-3 w-3 items-center justify-center rounded-full bg-slate-900 text-[8px] font-bold text-white">T</span>
+                            <span className="truncate">{formatHandle(pengurus.contact.tiktok)}</span>
+                          </a>
+                        )}
                       </div>
                     </div>
                   </div>
                 ))}
-              </div>
             </div>
+          </div>
           )}
+
 
           {/* Bidang-Bidang */}
           <div>

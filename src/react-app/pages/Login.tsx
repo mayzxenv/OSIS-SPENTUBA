@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Loader2, Shield, Zap, Users } from "lucide-react";
+import { apiUrl } from '@/react-app/lib/api';
 
 interface User {
   id: string;
@@ -11,6 +12,7 @@ interface User {
 export default function Login() {
   const [isPending, setIsPending] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [loginError, setLoginError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,11 +23,26 @@ export default function Login() {
 
   const handleLogin = async () => {
     setIsPending(true);
-    // Mock login
-    setTimeout(() => {
-      setUser({ id: "mock-user", email: "user@example.com", name: "Mock User" });
+    setLoginError('');
+
+    try {
+      const response = await fetch(apiUrl('/api/users/me'));
+      if (!response.ok) {
+        throw new Error(`Login check failed: ${response.status}`);
+      }
+
+      const profile = await response.json();
+      setUser({
+        id: String(profile?.id || 'user'),
+        email: String(profile?.email || ''),
+        name: String(profile?.name || 'Pengguna'),
+      });
+    } catch (error) {
+      console.error('Login error:', error);
+      setLoginError('Login belum tersedia dari server. Coba lagi sebentar.');
+    } finally {
       setIsPending(false);
-    }, 1000);
+    }
   };
 
   if (isPending) {
@@ -90,6 +107,12 @@ export default function Login() {
             </svg>
             <span>Masuk dengan Google</span>
           </button>
+
+          {loginError && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {loginError}
+            </div>
+          )}
 
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-600 text-center mb-4">

@@ -20,6 +20,11 @@ Set this environment variable in Vercel so frontend can reach the API backend:
 VITE_API_BASE_URL=https://YOUR-CLOUDFLARE-WORKER-URL
 ```
 
+Set your production domain for automatic SEO files (`public/robots.txt` and `public/sitemap.xml`) during build:
+```
+SEO_SITE_URL=https://YOUR-DOMAIN
+```
+
 Quick runtime override (without changing Vercel env):
 open your site once with query param below, then refresh normally.
 ```

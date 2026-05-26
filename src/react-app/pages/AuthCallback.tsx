@@ -1,16 +1,27 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Loader2 } from "lucide-react";
+import { apiUrl } from '@/react-app/lib/api';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleCallback = async () => {
-      // Mock auth callback
-      setTimeout(() => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const code = (params.get('code') || '').trim();
+
+        if (code) {
+          await fetch(apiUrl('/api/sessions'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code }),
+          });
+        }
+      } finally {
         navigate("/");
-      }, 1000);
+      }
     };
 
     handleCallback();
