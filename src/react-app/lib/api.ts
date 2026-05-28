@@ -1,7 +1,6 @@
-// Keep default empty so the frontend uses relative `/api/...` paths by default.
-// This prevents unintentional cross-browser/backend mismatches when
-// `VITE_API_BASE_URL` is not set in the environment.
-const DEFAULT_API_BASE_URL = "";
+// Default to the production worker that serves the API when the frontend is
+// deployed on Vercel without a separate `VITE_API_BASE_URL` override.
+const DEFAULT_API_BASE_URL = "https://019bd78e-c6c9-70be-99f0-e319b1d30389.osis-spentuba.workers.dev";
 
 function normalizeBaseUrl(value: string): string {
   return value.trim().replace(/\/$/, "");
@@ -16,8 +15,7 @@ function getRuntimeApiBaseUrl(): string {
 
   // Support one-time debug override via query param only. Deliberately ignore
   // any values persisted in sessionStorage/localStorage to prevent per-browser
-  // divergence — clients should use the environment `VITE_API_BASE_URL` when
-  // a non-relative API host is required for all users.
+  // divergence.
   if (queryBaseUrl) {
     // eslint-disable-next-line no-console
     console.warn('[osis] api_base_url override detected in query string — using for this load only.');
