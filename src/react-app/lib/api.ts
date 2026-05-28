@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE_URL = "";
+const DEFAULT_API_BASE_URL = "https://019bd78e-c6c9-70be-99f0-e319b1d30389.osis-spentuba.workers.dev";
 
 function normalizeBaseUrl(value: string): string {
   return value.trim().replace(/\/$/, "");
