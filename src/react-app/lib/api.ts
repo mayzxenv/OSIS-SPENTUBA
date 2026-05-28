@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE_URL = "https://019bd78e-c6c9-70be-99f0-e319b1d30389.osis-spentuba.workers.dev";
+const DEFAULT_API_BASE_URL = "";
 
 function normalizeBaseUrl(value: string): string {
   return value.trim().replace(/\/$/, "");
@@ -31,7 +31,7 @@ const apiBaseUrl = normalizeBaseUrl(
 if (typeof window !== 'undefined') {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  window.__osis_api_base_url = apiBaseUrl;
+  window.__osis_api_base_url = apiBaseUrl || '(relative)';
   // eslint-disable-next-line no-console
   console.info(`[osis] apiBaseUrl=${apiBaseUrl || '(relative)'}`);
 }
