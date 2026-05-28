@@ -4,8 +4,6 @@ import { Link } from 'react-router';
 import { useEffect, useState } from 'react';
 import { apiUrl } from '@/react-app/lib/api';
 
-const WORKER_ALBUMS_API = 'https://019bd78e-c6c9-70be-99f0-e319b1d30389.osis-spentuba.workers.dev/api/albums';
-
 type Album = {
   id: string | number;
   title: string;
@@ -76,73 +74,73 @@ export default function AlbumKegiatan() {
 
   useEffect(() => {
     const loadAlbums = async () => {
-      const fetchAlbumsFrom = async (url: string) => {
+      try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-        try {
-          const response = await fetch(url, {
-            signal: controller.signal,
-            headers: { Accept: 'application/json' },
-            cache: 'no-store',
-          });
+        const response = await fetch(apiUrl('/api/albums'), {
+          signal: controller.signal,
+          headers: { Accept: 'application/json' },
+          cache: 'no-store',
+        });
+        clearTimeout(timeoutId);
 
-          if (!response.ok) {
-            return null;
-          }
-
+        if (response.ok) {
           const contentType = response.headers.get('content-type') || '';
-          if (!contentType.includes('application/json')) {
-            return null;
-          }
-
-          const data = await response.json();
-          return Array.isArray(data) ? data.map(normalizeAlbum) : [];
-        } finally {
-          clearTimeout(timeoutId);
-        }
-      };
-
-      try {
-        const primaryUrl = apiUrl('/api/albums');
-        let normalized = await fetchAlbumsFrom(primaryUrl);
-
-        // If current host does not provide /api/albums (e.g. static domain),
-        // fallback to the Cloudflare worker API so gallery still works.
-        if (!normalized) {
-          normalized = await fetchAlbumsFrom(WORKER_ALBUMS_API);
-        }
-
-        if (normalized) {
-          setAlbums(normalized);
-          localStorage.setItem('osis_albums', JSON.stringify(normalized));
-          localStorage.setItem('osis_albums_timestamp', Date.now().toString());
-          setErrorMessage('');
-          return;
-        }
-      } catch (error) {
-        console.error('Error loading albums:', error);
-      }
-
-      const saved = localStorage.getItem('osis_albums');
-      const timestamp = localStorage.getItem('osis_albums_timestamp');
-      
-      if (saved && timestamp) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            setAlbums(parsed.map(normalizeAlbum));
-            setErrorMessage('Album dimuat dari cache lokal (offline mode).');
+          if (contentType.includes('application/json')) {
+            const data = await response.json();
+            const normalized = Array.isArray(data) ? data.map(normalizeAlbum) : [];
+            setAlbums(normalized);
+            localStorage.setItem('osis_albums', JSON.stringify(normalized));
+            localStorage.setItem('osis_albums_timestamp', Date.now().toString());
+            setErrorMessage('');
             return;
           }
-        } catch {
-          localStorage.removeItem('osis_albums');
-          localStorage.removeItem('osis_albums_timestamp');
         }
-      }
 
-      setAlbums([]);
-      setErrorMessage('Tidak dapat memuat album. Pastikan koneksi internet tersedia.');
+        // Fall back to the locally cached snapshot only if the live API failed.
+        const saved = localStorage.getItem('osis_albums');
+        const timestamp = localStorage.getItem('osis_albums_timestamp');
+
+        if (saved && timestamp) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) {
+              setAlbums(parsed.map(normalizeAlbum));
+              setErrorMessage('Album dimuat dari cache lokal (offline mode).');
+              return;
+            }
+          } catch {
+            localStorage.removeItem('osis_albums');
+            localStorage.removeItem('osis_albums_timestamp');
+          }
+        }
+
+        setAlbums([]);
+        setErrorMessage('Tidak dapat memuat album. Pastikan koneksi internet tersedia.');
+      } catch (error) {
+        console.error('Error loading albums:', error);
+
+        const saved = localStorage.getItem('osis_albums');
+        const timestamp = localStorage.getItem('osis_albums_timestamp');
+
+        if (saved && timestamp) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) {
+              setAlbums(parsed.map(normalizeAlbum));
+              setErrorMessage('Album dimuat dari cache lokal (offline mode).');
+              return;
+            }
+          } catch {
+            localStorage.removeItem('osis_albums');
+            localStorage.removeItem('osis_albums_timestamp');
+          }
+        }
+
+        setAlbums([]);
+        setErrorMessage('Tidak dapat memuat album. Pastikan koneksi internet tersedia.');
+      }
     };
 
     loadAlbums().finally(() => setLoading(false));

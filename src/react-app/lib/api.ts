@@ -1,6 +1,4 @@
-// Default to the production worker that serves the API when the frontend is
-// deployed on Vercel without a separate `VITE_API_BASE_URL` override.
-const DEFAULT_API_BASE_URL = "https://019bd78e-c6c9-70be-99f0-e319b1d30389.osis-spentuba.workers.dev";
+const DEFAULT_API_BASE_URL = "";
 
 function normalizeBaseUrl(value: string): string {
   return value.trim().replace(/\/$/, "");
