@@ -5,6 +5,7 @@ import App from "@/react-app/App.tsx";
 
 const APP_STORAGE_VERSION = '2026-05-28-2';
 const APP_STORAGE_VERSION_KEY = 'osis_app_storage_version';
+const APP_AUTO_RESET_QUERY_KEY = 'osis-reset';
 const STALE_STORAGE_KEYS = [
   'osis_albums',
   'osis_albums_timestamp',
@@ -20,11 +21,6 @@ function clearStaleAppStorage() {
   }
 
   try {
-    const storedVersion = localStorage.getItem(APP_STORAGE_VERSION_KEY);
-    if (storedVersion === APP_STORAGE_VERSION) {
-      return;
-    }
-
     STALE_STORAGE_KEYS.forEach((key) => {
       localStorage.removeItem(key);
       sessionStorage.removeItem(key);
@@ -32,13 +28,43 @@ function clearStaleAppStorage() {
 
     localStorage.setItem(APP_STORAGE_VERSION_KEY, APP_STORAGE_VERSION);
     // eslint-disable-next-line no-console
-    console.info(`[osis] Cleared stale browser storage for app version ${APP_STORAGE_VERSION}.`);
+    console.info(`[osis] Cleared app browser storage for version ${APP_STORAGE_VERSION}.`);
   } catch {
     // ignore storage access errors
   }
+
+  if ('caches' in window) {
+    caches.keys().then((cacheNames) => {
+      cacheNames.forEach((cacheName) => {
+        caches.delete(cacheName).catch(() => {
+          // ignore cache deletion errors
+        });
+      });
+    }).catch(() => {
+      // ignore cache API errors
+    });
+  }
 }
 
-clearStaleAppStorage();
+function restartWithCleanStorage() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const url = new URL(window.location.href);
+  if (url.searchParams.get(APP_AUTO_RESET_QUERY_KEY) === '1') {
+    url.searchParams.delete(APP_AUTO_RESET_QUERY_KEY);
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    return;
+  }
+
+  clearStaleAppStorage();
+
+  url.searchParams.set(APP_AUTO_RESET_QUERY_KEY, '1');
+  window.location.replace(`${url.pathname}${url.search}${url.hash}`);
+}
+
+restartWithCleanStorage();
 
 // If the app was built with an explicit VITE_API_BASE_URL, clear any client-side
 // overrides so all clients use the same backend. This helps avoid a situation
