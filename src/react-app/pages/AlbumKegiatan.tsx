@@ -41,6 +41,10 @@ function normalizeMediaList(value: unknown, singleFallback?: unknown): string[] 
   return [];
 }
 
+function getFallbackPhoto(album: Album): string | null {
+  return album.photos.find((photo) => typeof photo === 'string' && photo.trim().length > 0) || null;
+}
+
 function normalizeAlbum(raw: any): Album {
   return {
     id: raw?.id ?? Date.now(),
@@ -59,7 +63,7 @@ function normalizeAlbum(raw: any): Album {
 export default function AlbumKegiatan() {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [activePhotoIndex, setActivePhotoIndex] = useState<Record<string, number>>({});
-  const [brokenPhotos, setBrokenPhotos] = useState<Record<string, boolean>>({});
+  const [brokenPhotoIndices, setBrokenPhotoIndices] = useState<Record<string, number[]>>({});
   const [lightboxAlbumId, setLightboxAlbumId] = useState<string | null>(null);
   const [lightboxPhotoIndex, setLightboxPhotoIndex] = useState(0);
   const [albumComments, setAlbumComments] = useState<Record<string, AlbumComment[]>>({});
@@ -138,6 +142,36 @@ export default function AlbumKegiatan() {
 
   const syncAlbumState = (albumId: string | number, nextAlbum: Partial<Album>) => {
     setAlbums((prev) => prev.map((album) => (String(album.id) === String(albumId) ? { ...album, ...nextAlbum } : album)));
+  };
+
+  const getVisiblePhotoIndex = (album: Album): number => {
+    const key = String(album.id);
+    const currentIndex = activePhotoIndex[key] ?? 0;
+    const brokenIndices = brokenPhotoIndices[key] || [];
+
+    if (album.photos.length <= 1) {
+      return 0;
+    }
+
+    for (let offset = 0; offset < album.photos.length; offset += 1) {
+      const candidateIndex = (currentIndex + offset) % album.photos.length;
+      if (!brokenIndices.includes(candidateIndex)) {
+        return candidateIndex;
+      }
+    }
+
+    return 0;
+  };
+
+  const markPhotoBroken = (albumId: string | number, photoIndex: number) => {
+    const key = String(albumId);
+    setBrokenPhotoIndices((prev) => {
+      const existing = prev[key] || [];
+      if (existing.includes(photoIndex)) {
+        return prev;
+      }
+      return { ...prev, [key]: [...existing, photoIndex] };
+    });
   };
 
   const loadComments = async (albumId: string | number) => {
@@ -490,19 +524,32 @@ export default function AlbumKegiatan() {
                       <div className="border-t border-slate-200 bg-slate-950 lg:border-l lg:border-t-0">
                         {album.photos.length > 0 ? (
                           <div className="relative h-full min-h-[320px] sm:min-h-[420px]">
-                            {!brokenPhotos[albumKey] ? (
-                              <img
-                                src={album.photos.length > 1 ? album.photos[activePhotoIndex[albumKey] ?? 0] : album.photos[0]}
-                                alt={`${album.title} - Foto utama`}
-                                className="h-full min-h-[320px] w-full cursor-zoom-in object-cover sm:min-h-[420px]"
-                                onError={() => setBrokenPhotos((prev) => ({ ...prev, [albumKey]: true }))}
-                                onClick={() => openLightbox(album.id, activePhotoIndex[albumKey] ?? 0)}
-                              />
-                            ) : (
-                              <div className="flex min-h-[320px] items-center justify-center bg-slate-900 text-slate-300 sm:min-h-[420px]">
-                                Gambar tidak dapat dimuat
-                              </div>
-                            )}
+                            {(() => {
+                              const fallbackPhoto = getFallbackPhoto(album);
+                              const visibleIndex = getVisiblePhotoIndex(album);
+                              const visiblePhoto = album.photos[visibleIndex] || fallbackPhoto;
+
+                              if (!visiblePhoto) {
+                                return (
+                                  <div className="flex min-h-[320px] items-center justify-center bg-slate-900 text-slate-300 sm:min-h-[420px]">
+                                    Gambar tidak dapat dimuat
+                                  </div>
+                                );
+                              }
+
+                              return (
+                                <img
+                                  src={visiblePhoto}
+                                  alt={`${album.title} - Foto utama`}
+                                  className="h-full min-h-[320px] w-full cursor-zoom-in object-cover sm:min-h-[420px]"
+                                  onError={() => {
+                                    markPhotoBroken(album.id, visibleIndex);
+                                    setActivePhotoIndex((prev) => ({ ...prev, [albumKey]: (visibleIndex + 1) % album.photos.length }));
+                                  }}
+                                  onClick={() => openLightbox(album.id, visibleIndex)}
+                                />
+                              );
+                            })()}
 
                             <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-4">
                               <div className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-900 backdrop-blur">
@@ -524,7 +571,6 @@ export default function AlbumKegiatan() {
                                       const current = prev[albumKey] ?? 0;
                                       return { ...prev, [albumKey]: (current - 1 + album.photos.length) % album.photos.length };
                                     });
-                                    setBrokenPhotos((prev) => ({ ...prev, [albumKey]: false }));
                                   }}
                                   className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2.5 text-slate-900 shadow-lg backdrop-blur transition-colors hover:bg-white"
                                   aria-label="Foto sebelumnya"
@@ -538,7 +584,6 @@ export default function AlbumKegiatan() {
                                       const current = prev[albumKey] ?? 0;
                                       return { ...prev, [albumKey]: (current + 1) % album.photos.length };
                                     });
-                                    setBrokenPhotos((prev) => ({ ...prev, [albumKey]: false }));
                                   }}
                                   className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2.5 text-slate-900 shadow-lg backdrop-blur transition-colors hover:bg-white"
                                   aria-label="Foto berikutnya"
@@ -610,6 +655,7 @@ export default function AlbumKegiatan() {
               src={activeLightboxAlbum.photos[lightboxPhotoIndex]}
               alt={`${activeLightboxAlbum.title} - Foto ${lightboxPhotoIndex + 1}`}
               className="max-h-[80vh] w-full rounded-2xl object-contain"
+              onError={() => markPhotoBroken(activeLightboxAlbum.id, lightboxPhotoIndex)}
             />
 
             <button

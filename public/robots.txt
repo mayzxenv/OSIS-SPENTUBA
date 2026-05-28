@@ -1,5 +1,4 @@
 User-agent: *
 Allow: /
 
-# Ganti YOUR-DOMAIN dengan domain production kamu (tanpa slash di akhir)
 Sitemap: https://sispentuba.web.id/sitemap.xml

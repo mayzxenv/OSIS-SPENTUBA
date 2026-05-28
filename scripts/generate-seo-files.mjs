@@ -30,11 +30,11 @@ const baseUrl = normalizeBaseUrl(
     process.env.SITE_URL ||
     process.env.VERCEL_PROJECT_PRODUCTION_URL ||
     process.env.VERCEL_URL ||
-    ""
+    "https://sispentuba.web.id"
 );
 
 if (!baseUrl) {
-  console.warn("[seo] Skipped: set SEO_SITE_URL (or VITE_SITE_URL/SITE_URL) to generate sitemap and robots.");
+  console.warn("[seo] Skipped: base URL could not be resolved.");
   process.exit(0);
 }
 
