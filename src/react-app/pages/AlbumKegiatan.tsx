@@ -72,6 +72,27 @@ export default function AlbumKegiatan() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
+  const repairThisDevice = () => {
+    try {
+      const keysToClear = [
+        'osis_albums',
+        'osis_albums_timestamp',
+        'osis_albums_migrated',
+        'osis_albums_legacy_backup',
+        'osis_api_base_url',
+      ];
+
+      keysToClear.forEach((key) => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+      });
+
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to repair this device', error);
+    }
+  };
+
   useEffect(() => {
     const loadAlbums = async () => {
       try {
@@ -377,7 +398,16 @@ export default function AlbumKegiatan() {
 
           {errorMessage && (
             <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
-              {errorMessage}
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <span>{errorMessage}</span>
+                <button
+                  type="button"
+                  onClick={repairThisDevice}
+                  className="inline-flex items-center justify-center rounded-full border border-amber-300 bg-white px-4 py-2 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100"
+                >
+                  Perbaiki perangkat ini
+                </button>
+              </div>
             </div>
           )}
 

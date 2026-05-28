@@ -11,6 +11,7 @@ const STALE_STORAGE_KEYS = [
   'osis_albums_migrated',
   'osis_albums_legacy_backup',
   'osis_api_base_url',
+  'osis_device_repair_requested',
 ];
 
 function clearStaleAppStorage() {
