@@ -161,6 +161,9 @@ export default function RuangPribadi() {
                 <p className="mt-4 max-w-2xl text-base md:text-lg text-slate-600">
                   Ruang pribadi untuk curhat, laporan pelanggaran, dan laporan bullying. Setiap laporan dibaca serius, dijaga kerahasiaannya, dan diteruskan ke pihak sekolah.
                 </p>
+                <p className="mt-3 max-w-2xl text-sm md:text-base text-slate-500">
+                  Tambahkan nomor telfon agar kami bisa berkomunikasi tentang kasus ini, nomor tidak akan tersebar.
+                </p>
               </div>
 
               <div className="rounded-[2rem] border border-rose-200 bg-white p-6 shadow-[0_18px_60px_rgba(244,63,94,0.10)]">
