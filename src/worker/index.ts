@@ -567,6 +567,7 @@ app.post("/api/bullying-reports", async (c) => {
   const body = await c.req.json<{
     report_category?: string;
     reporter_name: string;
+    reporter_phone?: string;
     incident_description: string;
     incident_date?: string;
     incident_location?: string;
@@ -593,11 +594,12 @@ app.post("/api/bullying-reports", async (c) => {
 
   try {
     result = await c.env.DB.prepare(
-      `INSERT INTO bullying_reports (reporter_name, incident_description, incident_date, incident_location, evidence_files, report_category, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO bullying_reports (reporter_name, reporter_phone, incident_description, incident_date, incident_location, evidence_files, report_category, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     )
       .bind(
         body.reporter_name,
+        body.reporter_phone || "",
         body.incident_description,
         body.incident_date || new Date().toISOString(),
         body.incident_location || "",

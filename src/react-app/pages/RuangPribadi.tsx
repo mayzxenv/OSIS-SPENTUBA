@@ -26,6 +26,7 @@ export default function RuangPribadi() {
   const [formData, setFormData] = useState({
     report_category: 'laporan_bullying',
     reporter_name: '',
+    reporter_phone: '',
     incident_description: '',
     incident_date: '',
     incident_location: '',
@@ -69,6 +70,7 @@ export default function RuangPribadi() {
       setFormData({
         report_category: 'laporan_bullying',
         reporter_name: '',
+        reporter_phone: '',
         incident_description: '',
         incident_date: '',
         incident_location: '',
@@ -298,6 +300,19 @@ export default function RuangPribadi() {
                       className="w-full rounded-2xl border-2 border-slate-200 px-4 py-3 outline-none transition-colors focus:border-rose-500"
                       required
                     />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">Nomor Telfon / WhatsApp (opsional)</label>
+                    <input
+                      type="tel"
+                      name="reporter_phone"
+                      value={formData.reporter_phone}
+                      onChange={handleChange}
+                      placeholder="Contoh: 08xxxxxxx"
+                      className="w-full rounded-2xl border-2 border-slate-200 px-4 py-3 outline-none transition-colors focus:border-rose-500"
+                    />
+                    <p className="mt-2 text-xs text-slate-500">Tambahan nomor telfon agar kami bisa berkomunikasi tentang kasus ini, nomor tidak akan tersebar.</p>
                   </div>
 
                   <div>
