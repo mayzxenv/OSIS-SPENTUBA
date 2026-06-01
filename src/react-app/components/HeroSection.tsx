@@ -120,7 +120,7 @@ export default function HeroSection() {
             />
             <h1 className={`font-black text-center font-['Space_Grotesk'] leading-tight ${isPhoneMode ? 'text-3xl sm:text-4xl' : 'text-3xl sm:text-4xl md:text-5xl'}`}>
               <span className="block bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Pusat Aktivitas
+                SMPN 7 Bangkalan
               </span>
               <span className={`${isDarkMode ? 'text-white' : 'text-gray-900'} block mt-2`}>
                 OSIS SPENTUBA
@@ -130,7 +130,7 @@ export default function HeroSection() {
 
           {/* Subtitle */}
           <p className={`text-sm sm:text-base ${isDarkMode ? 'text-gray-200' : 'text-gray-600'} mb-8 max-w-2xl mx-auto leading-relaxed`}>
-            Platform resmi OSIS Spentuba untuk apresiasi, kolaborasi, dan aksi nyata.
+            Platform resmi OSIS SMPN 7 Bangkalan di Bangkalan, Jawa Timur, untuk apresiasi, kolaborasi, dan aksi nyata.
           </p>
 
           {/* CTA Buttons */}
