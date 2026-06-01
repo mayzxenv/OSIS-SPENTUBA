@@ -107,28 +107,8 @@ export default function AlbumKegiatan() {
             const data = await response.json();
             const normalized = Array.isArray(data) ? data.map(normalizeAlbum) : [];
             setAlbums(normalized);
-            localStorage.setItem('osis_albums', JSON.stringify(normalized));
-            localStorage.setItem('osis_albums_timestamp', Date.now().toString());
             setErrorMessage('');
             return;
-          }
-        }
-
-        // Fall back to the locally cached snapshot only if the live API failed.
-        const saved = localStorage.getItem('osis_albums');
-        const timestamp = localStorage.getItem('osis_albums_timestamp');
-
-        if (saved && timestamp) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed)) {
-              setAlbums(parsed.map(normalizeAlbum));
-              setErrorMessage('Album dimuat dari cache lokal (offline mode).');
-              return;
-            }
-          } catch {
-            localStorage.removeItem('osis_albums');
-            localStorage.removeItem('osis_albums_timestamp');
           }
         }
 
@@ -136,23 +116,6 @@ export default function AlbumKegiatan() {
         setErrorMessage('Tidak dapat memuat album. Pastikan koneksi internet tersedia.');
       } catch (error) {
         console.error('Error loading albums:', error);
-
-        const saved = localStorage.getItem('osis_albums');
-        const timestamp = localStorage.getItem('osis_albums_timestamp');
-
-        if (saved && timestamp) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed)) {
-              setAlbums(parsed.map(normalizeAlbum));
-              setErrorMessage('Album dimuat dari cache lokal (offline mode).');
-              return;
-            }
-          } catch {
-            localStorage.removeItem('osis_albums');
-            localStorage.removeItem('osis_albums_timestamp');
-          }
-        }
 
         setAlbums([]);
         setErrorMessage('Tidak dapat memuat album. Pastikan koneksi internet tersedia.');

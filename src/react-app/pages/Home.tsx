@@ -16,7 +16,7 @@ export default function Home() {
             <h2 className="mt-2 text-3xl font-black font-['Space_Grotesk'] text-slate-900 dark:text-white">Fitur utama yang aktif</h2>
           </div>
           <p className="hidden max-w-xl text-sm text-slate-600 dark:text-slate-300 md:block">
-            Semua jalur ini terhubung langsung ke halaman interaktif, jadi pengguna tidak jatuh ke tampilan galeri statis.
+            Semua jalur ini terhubung langsung ke halaman interaktif OSIS SMPN 7 Bangkalan di Bangkalan, Jawa Timur, jadi pengguna tidak jatuh ke tampilan galeri statis.
           </p>
         </div>
 

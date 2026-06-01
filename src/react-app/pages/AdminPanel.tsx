@@ -278,29 +278,10 @@ export default function AdminPanel() {
         const data = await response.json();
         const remoteAlbums = Array.isArray(data) ? data : [];
         setAlbums(remoteAlbums);
-        localStorage.setItem('osis_albums', JSON.stringify(remoteAlbums));
-        localStorage.setItem('osis_albums_timestamp', Date.now().toString());
         return;
       }
     } catch (error) {
       console.error('Error fetching albums:', error);
-    }
-
-    // Fallback to cache only if server unavailable
-    const cached = localStorage.getItem('osis_albums');
-    const timestamp = localStorage.getItem('osis_albums_timestamp');
-    
-    if (cached && timestamp) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed)) {
-          setAlbums(parsed);
-          return;
-        }
-      } catch {
-        localStorage.removeItem('osis_albums');
-        localStorage.removeItem('osis_albums_timestamp');
-      }
     }
 
     setAlbums([]);
